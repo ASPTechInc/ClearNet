@@ -1,0 +1,8 @@
+ClearNet is a free and open-source (FOSS) parental control application built with Flutter and native Android security systems. It is designed to safeguard children and devices by enforcing granular app restrictions and blocking harmful content fully offline.
+
+Key Features:
+- Uninstall Safeguard: Integrates tightly as an Android Device Administrator to prevent unauthorized removal without a parental PIN.
+- App Filtering: Blocks chosen restricted applications from executing or launching.
+- Offline Content Filter: Preloaded local JSON domain blocklists intercept queries without relying on remote servers.
+- High-Performance Local VPN: Routes network lookups completely locally inside an on-device VPNService loop.
+- Absolute Privacy: Zero analytics trackers, zero advertisement injection, and absolutely no personal metrics collected.

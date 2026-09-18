@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFFFF">
+
+    <ImageView
+        android:id="@+id/img_blocked"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@android:drawable/ic_dialog_alert" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sorry, this website is blocked."
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:gravity="center"
+        android:layout_marginTop="24dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ClearNet has restricted access to this content because it matches your prohibited domains or keywords rules. Please return to a safe browsing page."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:textColor="#666666"
+        android:background="#F5F5F5"
+        android:padding="12dp"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btn_back_home"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back to Safe Home"
+        android:layout_marginTop="32dp"/>
+
+</LinearLayout>

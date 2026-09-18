@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ClearNet</string>
+    <string name="accessibility_service_description">ClearNet Accessibility Service</string>
+</resources>
