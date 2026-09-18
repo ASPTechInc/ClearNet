@@ -1,3 +1,6 @@
+// Dart imports:
+import 'dart:async';
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +29,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    unawaited(_loadData());
     _searchController.addListener(_filterApps);
   }
 
@@ -79,7 +82,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Blocked Apps'),
+        title: const Text('Blocked apps'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(

@@ -10,7 +10,7 @@ import android.util.Log
 /**
  * AppBlockService implements an Android Accessibility Service to provide real-time
  * application blocking and content screening/filtering. It inspects window transitions,
- * scrolling events, and content mutations to detect restricted content or blacklisted apps.
+ * scrolling events and content mutations to detect restricted content or blacklisted apps.
  */
 class AppBlockService : AccessibilityService() {
 

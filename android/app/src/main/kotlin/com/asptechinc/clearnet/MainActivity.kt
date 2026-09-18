@@ -10,7 +10,7 @@ import io.flutter.plugin.common.MethodChannel
  * MainActivity serves as the main entrance point to the application, extending FlutterActivity.
  * It establishes a MethodChannel to facilitate communication between the Kotlin native layer
  * and the Dart/Flutter presentation layer, routing actions such as VPN lifecycle management,
- * package inventory collection, and system settings navigation.
+ * package inventory collection and system settings navigation.
  */
 class MainActivity : FlutterActivity() {
     

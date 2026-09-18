@@ -11,6 +11,9 @@ class Constants {
   static const String blockedAppsCountKey = 'blocked_apps_count';
   static const String lastStatsDateKey = 'last_stats_date';
   static const String lockSettingsKey = 'lock_settings';
+  static const String appLockEnabledKey = 'app_lock_enabled';
+  static const String uninstallPinKey = 'uninstall_pin';
+  static const String settingsLockPinKey = 'settings_lock_pin';
   
   static const String githubRepoUrl = 'https://github.com/asptechinc/clearnet';
   static const String privacyPolicyUrl = 'https://github.com/asptechinc/clearnet/blob/main/PRIVACY_POLICY.md';

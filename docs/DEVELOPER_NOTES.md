@@ -9,6 +9,7 @@
 - [Stop tracking files in Git](#stop-tracking-files-in-git)
 - [Enable pre-commit in repository](#enable-pre-commit-in-repository)
 - [SDK locations](#sdk-locations)
+- [Flutter plugin error notes](#flutter-plugin-error-notes)
 
 ---
 
@@ -265,3 +266,32 @@ git commit -m "Stop tracking build/ directory"
 Dark SDK is installed at `/home/<username>/flutter/bin/cache/dart-sdk`
 
 Flutter SDK is installed at `/home/<username>/flutter`
+
+---
+
+## Flutter plugin error notes
+
+The `FlutterPlugin.kt` has the following errors in the Flutter version `3.47.4` and Dart version `3.13.3`.
+
+```bash
+/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:584:43 No value passed for parameter 'extension'
+/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:584:63 Unresolved reference 'androidExtension'
+/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:584:79 Syntax error: Expecting an element.
+```
+
+To solve it, ensure that the `androidExtension` is properly passed to the `FlutterPlugin.kt` file and that all required parameters are provided. You may need to update your Flutter and Android Gradle plugin versions to the latest compatible versions.
+
+Change 
+
+```kotlin
+configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
+```
+to
+
+```kotlin
+configureAbiWithoutSplits(projectToAddTasksTo, androidExtension)
+```
+
+Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK folder might notice this local modification. If it complains about a conflict, you can safely reset or discard changes in that directory before upgrading (git checkout -- packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt), since the upstream Flutter developers will have officially fixed the typo in the newer version anyway.
+
+---
