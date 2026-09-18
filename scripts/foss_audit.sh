@@ -17,10 +17,10 @@ echo -e "\n[PHASE 1] Scanning .dart_tool/pub.dev cache for compiled native binar
 if [ -d ".dart_tool/pub.dev" ]; then
     FOUND_BINARIES=$(find .dart_tool/pub.dev/ \( -name "*.aar" -o -name "*.jar" -o -name "*.so" \) 2>/dev/null || true)
     if [ -n "$FOUND_BINARIES" ]; then
-        echo "  Attention: Found compiled binary objects in cache:"
+        echo "Attention: Found compiled binary objects in cache:"
         echo "$FOUND_BINARIES"
     else
-        echo "✅ No compiled binary blobs detected inside .dart_tool/pub.dev cache."
+        echo "No compiled binary blobs detected inside .dart_tool/pub.dev cache."
     fi
 else
     echo ".dart_tool/pub.dev cache folder not initialised yet. Skipping local asset scans."
@@ -41,16 +41,16 @@ if [ -d "android" ]; then
     PROPRIETARY_MATCHES=$(grep -Ei 'com.google.android.gms:play-services-auth|com.android.billingclient|com.google.firebase:firebase-analytics' dependencies_dump.txt || true)
 
     if [ -n "$PROPRIETARY_MATCHES" ]; then
-        echo "❌ FOSS Violation Alert: Potential closed-source package signatures caught in tree:"
+        echo "FOSS Violation Alert: Potential closed-source package signatures caught in tree:"
         echo "$PROPRIETARY_MATCHES"
         rm dependencies_dump.txt
         exit 1
     else
-        echo "✅ Dependency tree lookup verified clean. No flagged proprietary signatures discovered."
+        echo "Dependency tree lookup verified clean. No flagged proprietary signatures discovered."
     fi
     rm dependencies_dump.txt
 else
-    echo "❌ Error: Native android module context folder not found."
+    echo "Error: Native android module context folder not found."
     exit 1
 fi
 

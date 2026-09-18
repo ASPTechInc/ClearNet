@@ -19,7 +19,7 @@ of interest.
 - [iCare](https://github.com/ASPTechInc/iCare) - An open-source hospital management website written
   in Python.
 
-- [ClearNet](https://github.com/ASPTechInc/ClearNet) – _This repository (included for reference)_
+- [ClearNet](https://github.com/ASPTechInc/ClearNet) - _This repository (included for reference)_
 
   A cross-platform word puzzle game built with
   Rust and [egui/eframe](https://github.com/emilk/egui/) that challenges players to solve linguistic

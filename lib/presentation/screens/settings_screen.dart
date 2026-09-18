@@ -176,46 +176,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<ThemeMode>(
-                title: const Text('Follow System'),
-                value: ThemeMode.system,
-                groupValue: ThemeService.themeModeNotifier.value,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    ThemeService().updateThemeMode(value);
-                    Navigator.pop(context);
-                    setState(() {});
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: const Text('Light'),
-                value: ThemeMode.light,
-                groupValue: ThemeService.themeModeNotifier.value,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    ThemeService().updateThemeMode(value);
-                    Navigator.pop(context);
-                    setState(() {});
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: const Text('Dark'),
-                value: ThemeMode.dark,
-                groupValue: ThemeService.themeModeNotifier.value,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    ThemeService().updateThemeMode(value);
-                    Navigator.pop(context);
-                    setState(() {});
-                  }
-                },
-              ),
-            ],
+          content: RadioGroup<ThemeMode>(
+            groupValue: ThemeService.themeModeNotifier.value,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                ThemeService().updateThemeMode(value);
+                Navigator.pop(context);
+                setState(() {});
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: const Text('Follow System'),
+                  value: ThemeMode.system,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Light'),
+                  value: ThemeMode.light,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Dark'),
+                  value: ThemeMode.dark,
+                ),
+              ],
+            ),
           ),
         );
       },
