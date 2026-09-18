@@ -1,6 +1,6 @@
 # Privacy policy
 
-Last updated: 09-09-2026
+Last updated: 18-09-2026
 
 ClearNet is a free and open source software (FOSS) parental control application built with Flutter.
 This privacy policy explains what data the app handles and how.
@@ -26,7 +26,7 @@ ClearNet does not transmit your private network metadata or configurations to ex
 ## Permissions
 
 ClearNet requires the following permissions to operate:
-- **Device Administrator**: Used strictly to safeguard the app against unauthorized deletion.
+- **Device Administrator**: Used strictly to safeguard the app against unauthorised deletion.
 - **VPN Service**: Used to loop network packets locally to block harmful adult domains completely offline.
 
 ## Open source transparency

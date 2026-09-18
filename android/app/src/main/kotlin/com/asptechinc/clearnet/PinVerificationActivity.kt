@@ -14,7 +14,7 @@ class PinVerificationActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Spin up an isolated Flutter engine initialized directly to the PIN verification route
+        // Spin up an isolated Flutter engine initialised directly to the PIN verification route
         val intent = FlutterActivity
             .withNewEngine()
             .initialRoute("/verify_uninstall_pin")

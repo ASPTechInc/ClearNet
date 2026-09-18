@@ -96,7 +96,7 @@ It is designed to protect individuals by blocking harmful content, restricting a
 ClearNet targets parents who want a safe device environment for their kids and organisations that need basic app and site filtering.
 
 1. Parent installs ClearNet.
-2. Enables Device Admin configuration -> protects against unauthorized uninstall.
+2. Enables Device Admin configuration -> protects against unauthorised uninstall.
 3. Configures blocked apps or websites via the secure UI.
 4. The application merges local asset blocklists with custom configurations, routing device queries through a local VPNService to filter traffic entirely offline.
 

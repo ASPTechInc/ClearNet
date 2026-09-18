@@ -69,7 +69,7 @@ class SafeVpnService : VpnService(), Runnable {
     }
 
     /**
-     * Initializes service parameters, reads preference data clusters, configurations,
+     * Initialises service parameters, reads preference data clusters, configurations,
      * builds the virtual TUN interface parameters, and spins up the worker reading thread.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
