@@ -429,7 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
-            title: const Text('License'),
+            title: const Text('Licence'),
             onTap: () => _launchUrl(Constants.licenseUrl),
           ),
           ListTile(

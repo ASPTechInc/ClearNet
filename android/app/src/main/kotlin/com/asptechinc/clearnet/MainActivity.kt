@@ -137,7 +137,7 @@ class MainActivity : FlutterActivity() {
             flutterEngine?.dartExecutor?.binaryMessenger?.let {
                 MethodChannel(it, CHANNEL).invokeMethod("showBlockedPage", null)
             } ?: run {
-                // Cache the block flag if the engine is not fully attached or initialized yet
+                // Cache the block flag if the engine is not fully attached or initialised yet
                 pendingShowBlocked = true
             }
         }

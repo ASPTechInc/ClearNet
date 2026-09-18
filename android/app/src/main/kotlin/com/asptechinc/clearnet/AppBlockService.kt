@@ -165,7 +165,7 @@ class AppBlockService : AccessibilityService() {
      * Recursively traverses an accessibility node and all its child elements to scan text
      * and content descriptions for blacklisted keywords or website patterns.
      *
-     * @param node The accessibility node to analyze.
+     * @param node The accessibility node to analyse.
      * @return True if a block match is found, false otherwise.
      */
     private fun scanForBlockedContent(node: AccessibilityNodeInfo?): Boolean {
