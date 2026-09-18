@@ -1,0 +1,8 @@
+Initial release of ClearNet FOSS!
+- Secure parental app control built with Flutter.
+- Uninstall protection via safe Device Admin rules.
+- Offline custom website blocklist filtering.
+- Local VPNService intercepts traffic completely offline.
+- SafeSearch enforcement for Google, Bing, and YouTube.
+- In-app Changelog, Source Code, and Support links.
+- Privacy-focused: no remote cloud accounts, trackers, or ads.

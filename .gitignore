@@ -6,8 +6,13 @@
 *.swp
 .buildlog/
 .history
+*.iml
 
-
+# Mac/Linux/Windows
+.DS_Store
+.directory
+Thumbs.db
+desktop.ini
 
 # Flutter repo-specific
 /bin/cache/
@@ -47,15 +52,19 @@ unlinked.ds
 unlinked_spec.ds
 
 # Android related
-**/android/**/gradle-wrapper.jar
 .gradle/
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 *.jks
+*.apk
+*.aab
+*.aar
+*.keystore.properties
+keystore.properties
+**/android/.idea/
+.idea/
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -117,3 +126,12 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Artefats
+.artifacts/
+clear_net/
+
+# 'act' files (a local GitHub workflow test tool)
+.vars
+.secrets
+.env
