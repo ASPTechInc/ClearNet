@@ -12,7 +12,7 @@ Please email the maintainer at: security@clearnet.app
 
 If that email is not yet active for your fork or deployment, open a private 
 security advisory on GitHub or contact the project maintainer through the 
-repository’s preferred private channel.
+repository's preferred private channel.
 
 Please do not open a public GitHub issue for security vulnerabilities.
 
