@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Java Development Kit Environment
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'zulu'
           java-version: '17'
