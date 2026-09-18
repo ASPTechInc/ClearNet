@@ -1,3 +1,6 @@
+// Dart imports:
+import 'dart:async';
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 
@@ -7,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/stats_manager.dart';
+import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
@@ -25,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    unawaited(_loadData());
   }
 
   Future<void> _loadData() async {
@@ -66,16 +70,18 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => PinLockScreen(
+            pinKey: Constants.settingsLockPinKey,
+            title: 'Verify Settings PIN',
             onSuccess: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
+              Navigator.pushNamed(context, AppRoutes.settingsPath);
             },
           ),
         ),
       );
     } else {
       if (!mounted) return;
-      Navigator.pushNamed(context, '/settings');
+      Navigator.pushNamed(context, AppRoutes.settingsPath);
     }
   }
 

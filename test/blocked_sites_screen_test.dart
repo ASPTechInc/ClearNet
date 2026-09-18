@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/presentation/screens/blocked_sites.dart';
-import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

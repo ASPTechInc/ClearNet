@@ -1,20 +1,21 @@
+// Dart imports:
+import 'dart:async';
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Project imports:
+import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
-import 'package:clearnet/presentation/screens/biometric_lock_screen.dart';
-import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
-import 'package:clearnet/presentation/screens/blocked_apps_screen.dart';
-import 'package:clearnet/presentation/screens/home_screen.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
-import 'package:clearnet/presentation/screens/settings_screen.dart';
+import 'package:clearnet/presentation/navigation/app_routes.dart';
+import 'package:clearnet/presentation/theme/app_theme.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemeService().init();
+  await BlocklistManager.init();
   runApp(const MyApp());
 }
 
@@ -33,7 +34,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _setupMethodChannel();
-    _checkInitialAction();
+    unawaited(_checkInitialAction());
   }
 
   void _setupMethodChannel() {
@@ -60,7 +61,7 @@ class _MyAppState extends State<MyApp> {
 
   void _navigateToBlocked() {
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/blocked',
+      AppRoutes.blocked,
       (route) => false,
     );
   }
@@ -74,35 +75,11 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: Constants.appName,
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.red[900]!,
-              brightness: Brightness.light,
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.red[900]!,
-              brightness: Brightness.dark,
-            ),
-          ),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: mode,
-          initialRoute: '/',
-          routes: {
-            '/': (_) => const BiometricLockScreen(),
-            '/verify_uninstall_pin': (context) => PinLockScreen(
-                  onSuccess: () {
-                    SystemNavigator.pop();
-                  },
-                ),
-            '/setup_pin': (_) => const PinLockScreen(confirmMode: true),
-            '/settings': (_) => const SettingsScreen(),
-            '/home': (_) => const HomeScreen(),
-            '/blocked': (_) => const BlockedAccessScreen(),
-            '/blocked_apps': (_) => const BlockedAppsScreen(),
-          },
+          initialRoute: AppRoutes.root,
+          onGenerateRoute: AppRoutes.generateRoute,
         );
       },
     );

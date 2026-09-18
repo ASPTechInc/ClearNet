@@ -2,14 +2,13 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.asptechinc.clearnet"
-    compileSdkVersion(libs.versions.compileSdk.get().toInt())
+    compileSdk = libs.versions.compileSdk.get().toInt()
     ndkVersion = "30.0.16248370"
 
     compileOptions {
@@ -22,8 +21,8 @@ android {
         applicationId = "com.asptechinc.clearnet"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdkVersion(flutter.minSdkVersion)
-        targetSdkVersion(flutter.targetSdkVersion)
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

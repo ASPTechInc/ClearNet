@@ -1,10 +1,12 @@
 // Dart imports:
 import 'dart:convert';
+import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/services.dart' show rootBundle;
 
 // Package imports:
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Project imports:
@@ -19,11 +21,50 @@ class BlocklistManager {
   static const _finalDomainsKey = Constants.blocklistKey;
   static const _finalKeywordsKey = Constants.keywordsKey;
 
+  static Future<File> _getLocalFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File('${directory.path}/blocklist.json');
+  }
+
+  /// Ensures SharedPreferences is in sync with blocklist.json if it exists
+  static Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final file = await _getLocalFile();
+    
+    // Check if we have any user data in SharedPreferences
+    final hasUserData = (prefs.getStringList(_userDomainsKey) ?? []).isNotEmpty ||
+                        (prefs.getStringList(_userKeywordsKey) ?? []).isNotEmpty;
+
+    if (await file.exists()) {
+      try {
+        final jsonString = await file.readAsString();
+        await importFromJson(jsonString, syncToFile: false);
+      } catch (e) {
+        // Handle error or ignore
+      }
+    } else if (!hasUserData) {
+      // First run or no data: load from assets into user list by default
+      final assetData = await _loadAssetData();
+      final domains = assetData['domains'] ?? [];
+      final keywords = assetData['keywords'] ?? [];
+      
+      if (domains.isNotEmpty || keywords.isNotEmpty) {
+        await prefs.setStringList(_userDomainsKey, domains);
+        await prefs.setStringList(_userKeywordsKey, keywords);
+        await buildFinalBlocklist();
+        await _saveToFile();
+      }
+    }
+  }
+
   /// Load baseline data from bundled JSON asset
   static Future<Map<String, List<String>>> _loadAssetData() async {
     try {
       final jsonString = await rootBundle.loadString(Constants.blocklistAsset);
-      final dynamic data = json.decode(jsonString);
+
+      // Cast the decoded JSON to Map<String, dynamic>
+      final data = json.decode(jsonString) as Map<String, dynamic>;
+      
       return {
         'domains': List<String>.from(data['domains'] ?? []),
         'keywords': List<String>.from(data['keywords'] ?? []),
@@ -58,6 +99,7 @@ class BlocklistManager {
       current.add(cleaned);
       await prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist(); // Sync to native
+      await _saveToFile();
     }
   }
 
@@ -70,6 +112,7 @@ class BlocklistManager {
       current.add(cleaned);
       await prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist(); // Sync to native
+      await _saveToFile();
     }
   }
 
@@ -80,6 +123,7 @@ class BlocklistManager {
     if (current.remove(domain.toLowerCase())) {
       await prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist();
+      await _saveToFile();
     }
   }
 
@@ -90,7 +134,55 @@ class BlocklistManager {
     if (current.remove(keyword.toLowerCase())) {
       await prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist();
+      await _saveToFile();
     }
+  }
+
+  /// Update an existing user domain
+  static Future<void> updateUserDomain(String oldDomain, String newDomain) async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getStringList(_userDomainsKey) ?? [];
+    final oldCleaned = oldDomain.toLowerCase();
+    final newCleaned = newDomain.trim().toLowerCase();
+
+    if (newCleaned.isEmpty) return;
+
+    final index = current.indexOf(oldCleaned);
+    if (index != -1) {
+      current[index] = newCleaned;
+      await prefs.setStringList(_userDomainsKey, current);
+      await buildFinalBlocklist();
+      await _saveToFile();
+    }
+  }
+
+  /// Update an existing user keyword
+  static Future<void> updateUserKeyword(String oldKeyword, String newKeyword) async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getStringList(_userKeywordsKey) ?? [];
+    final oldCleaned = oldKeyword.toLowerCase();
+    final newCleaned = newKeyword.trim().toLowerCase();
+
+    if (newCleaned.isEmpty) return;
+
+    final index = current.indexOf(oldCleaned);
+    if (index != -1) {
+      current[index] = newCleaned;
+      await prefs.setStringList(_userKeywordsKey, current);
+      await buildFinalBlocklist();
+      await _saveToFile();
+    }
+  }
+
+  static Future<void> _saveToFile() async {
+    final domains = await loadUserDomains();
+    final keywords = await loadUserKeywords();
+    final file = await _getLocalFile();
+    final jsonString = json.encode({
+      'domains': domains,
+      'keywords': keywords,
+    });
+    await file.writeAsString(jsonString);
   }
 
   /// Merge all sources and sync to SharedPreferences for Android access
@@ -132,9 +224,10 @@ class BlocklistManager {
   }
 
   /// Import user settings from JSON string
-  static Future<void> importFromJson(String jsonString) async {
+  static Future<void> importFromJson(String jsonString, {bool syncToFile = true}) async {
     try {
-      final dynamic data = json.decode(jsonString);
+      // Cast the decoded JSON to Map<String, dynamic>
+      final data = json.decode(jsonString) as Map<String, dynamic>;
       final List<String> domains = List<String>.from(data['domains'] ?? []);
       final List<String> keywords = List<String>.from(data['keywords'] ?? []);
 
@@ -143,6 +236,9 @@ class BlocklistManager {
       await prefs.setStringList(_userKeywordsKey, keywords.map((s) => s.toLowerCase()).toList());
       
       await buildFinalBlocklist();
+      if (syncToFile) {
+        await _saveToFile();
+      }
     } catch (e) {
       throw Exception('Invalid JSON format for blocklist import');
     }

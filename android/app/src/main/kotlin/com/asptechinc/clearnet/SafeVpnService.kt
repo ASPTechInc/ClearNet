@@ -70,7 +70,7 @@ class SafeVpnService : VpnService(), Runnable {
 
     /**
      * Initialises service parameters, reads preference data clusters, configurations,
-     * builds the virtual TUN interface parameters, and spins up the worker reading thread.
+     * builds the virtual TUN interface parameters and spins up the worker reading thread.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)

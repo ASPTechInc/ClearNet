@@ -5,14 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Project imports:
+import 'package:clearnet/shared/utilities/constants.dart';
+
 class PinLockScreen extends StatefulWidget {
   const PinLockScreen({
     super.key,
     this.confirmMode = false,
     this.onSuccess,
+    this.pinKey = Constants.uninstallPinKey,
+    this.title = 'Enter PIN',
   });
   final bool confirmMode;
   final VoidCallback? onSuccess;
+  final String pinKey;
+  final String title;
 
   @override
   State<PinLockScreen> createState() => _PinLockScreenState();
@@ -26,18 +33,63 @@ class _PinLockScreenState extends State<PinLockScreen> {
   Future<void> _handleSubmit() async {
     final enteredPin = _pinController.text;
 
+    if (enteredPin.length < 4 || enteredPin.length > 16) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PIN must be between 4 and 16 digits')),
+      );
+      return;
+    }
+
     if (widget.confirmMode) {
       // Confirm PIN setup
       if (_firstEntry == null) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm PIN'),
+            content: Text('Is your PIN correct?\n\n$enteredPin'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Edit'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirm'),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed != true) return;
+
         setState(() => _firstEntry = enteredPin);
         _pinController.clear();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Re-enter PIN to confirm')),
         );
       } else if (_firstEntry == enteredPin) {
-        await storage.write(key: 'uninstall_pin', value: enteredPin);
+        // Validation: Ensure it doesn't match the other PIN
+        final otherKey = widget.pinKey == Constants.uninstallPinKey 
+            ? Constants.settingsLockPinKey 
+            : Constants.uninstallPinKey;
+        final otherPin = await storage.read(key: otherKey);
+
+        if (otherPin != null && otherPin == enteredPin) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(widget.pinKey == Constants.uninstallPinKey
+                ? 'Uninstall PIN cannot match Settings PIN'
+                : 'Settings PIN cannot match Uninstall PIN')),
+          );
+          return;
+        }
+
+        await storage.write(key: widget.pinKey, value: enteredPin);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('uninstall_pin', enteredPin);
+        await prefs.setString(widget.pinKey, enteredPin);
         widget.onSuccess?.call();
       } else {
         ScaffoldMessenger.of(
@@ -46,7 +98,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
       }
     } else {
       // Verification
-      final savedPin = await storage.read(key: 'uninstall_pin');
+      final savedPin = await storage.read(key: widget.pinKey);
       if (savedPin == enteredPin) {
         widget.onSuccess?.call();
       } else {
@@ -61,7 +113,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter PIN')),
+      appBar: AppBar(title: Text(widget.title)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

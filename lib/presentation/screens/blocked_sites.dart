@@ -1,6 +1,13 @@
+// Dart imports:
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 // Flutter imports:
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+// Package imports:
+import 'package:file_picker/file_picker.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
@@ -23,10 +30,11 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    unawaited(_loadData());
   }
 
   Future<void> _loadData() async {
+    await BlocklistManager.init(); // Load from blocklist.json by default
     final domains = await BlocklistManager.loadUserDomains();
     final keywords = await BlocklistManager.loadUserKeywords();
     setState(() {
@@ -68,57 +76,39 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
     await VpnController.removeKeyword(keyword);
   }
 
-  void _showImportExportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Export / Import JSON'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final json = await BlocklistManager.exportToJson();
-                  await Clipboard.setData(ClipboardData(text: json));
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('JSON copied to clipboard')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Export to Clipboard'),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => _showImportInput(),
-                icon: const Icon(Icons.paste),
-                label: const Text('Import from Text'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  Future<void> _updateDomain(String oldDomain, String newDomain) async {
+    if (newDomain.trim().isEmpty) return;
+    await BlocklistManager.updateUserDomain(oldDomain, newDomain);
+    await _loadData();
+    // Simplified: re-sync all or just update. Here we build final in manager.
+    // For VpnController, it might need specific handling if it's incremental.
+    await VpnController.removeSite(oldDomain);
+    await VpnController.addSite(newDomain);
   }
 
-  void _showImportInput() {
-    final controller = TextEditingController();
-    showDialog(
+  Future<void> _updateKeyword(String oldKeyword, String newKeyword) async {
+    if (newKeyword.trim().isEmpty) return;
+    await BlocklistManager.updateUserKeyword(oldKeyword, newKeyword);
+    await _loadData();
+    await VpnController.removeKeyword(oldKeyword);
+    await VpnController.addKeyword(newKeyword);
+  }
+
+  Future<void> _showEditDialog(String value, bool isDomain) async {
+    final TextEditingController editController = TextEditingController(text: value);
+    final String title = isDomain ? 'Edit Domain' : 'Edit Keyword';
+
+    return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Paste Blocklist JSON'),
+          title: Text(title),
           content: TextField(
-            key: const Key('import_json_input'),
-            controller: controller,
-            maxLines: 10,
-            decoration: const InputDecoration(
-              hintText: '{"domains": ["example.com"], "keywords": ["badword"]}',
-              border: OutlineInputBorder(),
+            controller: editController,
+            decoration: InputDecoration(
+              hintText: isDomain ? 'example.com' : 'keyword',
             ),
+            autofocus: true,
           ),
           actions: [
             TextButton(
@@ -127,28 +117,74 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                try {
-                  await BlocklistManager.importFromJson(controller.text);
-                  await _loadData();
-                  if (mounted) {
-                    Navigator.pop(context); // Close input
-                    Navigator.pop(context); // Close main dialog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Blocklist imported successfully')),
-                    );
+                final newValue = editController.text.trim();
+                if (newValue.isNotEmpty && newValue != value) {
+                  if (isDomain) {
+                    await _updateDomain(value, newValue);
+                  } else {
+                    await _updateKeyword(value, newValue);
                   }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString()}')),
-                  );
                 }
+                if (mounted) Navigator.pop(context);
               },
-              child: const Text('Import'),
+              child: const Text('Save'),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _importFromFile() async {
+    try {
+      final result = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result != null && result.path != null) {
+        final file = File(result.path!);
+        final jsonString = await file.readAsString();
+        await BlocklistManager.importFromJson(jsonString);
+        await _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Blocklist imported successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportToFile() async {
+    try {
+      final jsonString = await BlocklistManager.exportToJson();
+      final result = await FilePicker.saveFile(
+        dialogTitle: 'Export Blocklist',
+        fileName: 'blocklist.json',
+        bytes: utf8.encode(jsonString),
+      );
+
+      if (result != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Blocklist exported to $result')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error exporting: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   @override
@@ -157,13 +193,19 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Manage Blocked Content'),
+          title: const Text('Blocked content'),
           actions: [
             IconButton(
-              key: const Key('import_export_button'),
-              icon: const Icon(Icons.swap_vert),
-              onPressed: _showImportExportDialog,
-              tooltip: 'Import/Export',
+              key: const Key('import_button'),
+              icon: const Icon(Icons.file_upload),
+              onPressed: _importFromFile,
+              tooltip: 'Import blocklist.json',
+            ),
+            IconButton(
+              key: const Key('export_button'),
+              icon: const Icon(Icons.file_download),
+              onPressed: _exportToFile,
+              tooltip: 'Export blocklist.json',
             ),
           ],
           bottom: const TabBar(
@@ -217,19 +259,22 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: userDomains.length,
-            itemBuilder: (context, index) {
-              final domain = userDomains[index];
-              return ListTile(
-                title: Text(domain),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _removeDomain(domain),
+          child: userDomains.isEmpty
+              ? _buildNoDataView('No blocked domains yet')
+              : ListView.builder(
+                  itemCount: userDomains.length,
+                  itemBuilder: (context, index) {
+                    final domain = userDomains[index];
+                    return ListTile(
+                      title: Text(domain),
+                      onTap: () => _showEditDialog(domain, true),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeDomain(domain),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -269,21 +314,49 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: userKeywords.length,
-            itemBuilder: (context, index) {
-              final keyword = userKeywords[index];
-              return ListTile(
-                title: Text(keyword),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _removeKeyword(keyword),
+          child: userKeywords.isEmpty
+              ? _buildNoDataView('No blocked keywords yet')
+              : ListView.builder(
+                  itemCount: userKeywords.length,
+                  itemBuilder: (context, index) {
+                    final keyword = userKeywords[index];
+                    return ListTile(
+                      title: Text(keyword),
+                      onTap: () => _showEditDialog(keyword, false),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeKeyword(keyword),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNoDataView(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/no-data.png',
+            width: 150,
+            height: 150,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
