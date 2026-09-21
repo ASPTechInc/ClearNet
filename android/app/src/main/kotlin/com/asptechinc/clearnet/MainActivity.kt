@@ -1,6 +1,7 @@
 package com.asptechinc.clearnet
 
 import android.content.Intent
+import android.app.Activity
 import android.net.VpnService
 import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
@@ -25,6 +26,8 @@ class MainActivity : FlutterActivity() {
     
     private val CHANNEL = "app_control/channel"
     private var pendingShowBlocked = false
+    private val CONFIRMATION_REQUEST_CODE = 1001
+    private var pendingConfirmationResult: MethodChannel.Result? = null
 
     /**
      * Set up native method handlers to receive calls from Flutter Dart side.
@@ -133,6 +136,11 @@ class MainActivity : FlutterActivity() {
                     startActivity(intent)
                     result.success(true)
                 }
+                "showDisableConfirmation" -> {
+                    val intent = Intent(this, ConfirmationActivity::class.java)
+                    startActivityForResult(intent, CONFIRMATION_REQUEST_CODE)
+                    pendingConfirmationResult = result
+                }
                 else -> result.notImplemented()
             }
         }
@@ -180,6 +188,14 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CONFIRMATION_REQUEST_CODE) {
+            pendingConfirmationResult?.success(resultCode == RESULT_OK)
+            pendingConfirmationResult = null
+        }
     }
 
     /**

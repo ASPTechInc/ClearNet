@@ -13,6 +13,7 @@ import 'package:clearnet/data/services/stats_manager.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
+import 'package:clearnet/shared/utilities/helpers.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,10 +62,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleBlocking(bool value) async {
     if (value) {
-      final isEnabled = await VpnController.isAccessibilityServiceEnabled();
-      if (!isEnabled) {
+      final isAccessibilityEnabled = await VpnController.isAccessibilityServiceEnabled();
+      if (!isAccessibilityEnabled) {
         if (!mounted) return;
-        _showEnableAccessibilityDialog();
+        await _showEnableAccessibilityDialog();
+        return;
+      }
+
+      final isBatteryOptimized = await VpnController.isIgnoringBatteryOptimizations();
+      if (!isBatteryOptimized) {
+        if (!mounted) return;
+        await _showBatteryOptimizationDialog();
+        return;
+      }
+    } else {
+      // User is trying to disable blocking, show the complex confirmation task
+      final confirmed = await VpnController.showDisableConfirmation();
+      if (!confirmed) {
+        // User failed or cancelled the task, do not toggle the switch
+        setState(() {
+          _isBlockingEnabled = true;
+        });
         return;
       }
     }
@@ -107,10 +125,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showBatteryOptimizationDialog() {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Battery performance'),
+        content: const Text(
+          'For the VPN and Website Blocking to work reliably, battery optimization has to be disabled for ClearNet.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await VpnController.requestIgnoreBatteryOptimizations();
+            },
+            child: const Text('Disable optimization'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openSettings() async {
     final isLocked = await _prefs.getBool(Constants.lockSettingsKey) ?? false;
     
-    if (isLocked) {
+    if (isLocked && !AppSession.isSettingsUnlocked) {
       if (!mounted) return;
       Navigator.push(
         context,
@@ -119,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
             pinKey: Constants.settingsLockPinKey,
             title: 'Verify Settings PIN',
             onSuccess: () {
+              AppSession.isSettingsUnlocked = true;
               Navigator.pop(context);
               Navigator.pushNamed(context, AppRoutes.settingsPath);
             },
