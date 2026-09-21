@@ -125,7 +125,10 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen> {
                     await _updateKeyword(value, newValue);
                   }
                 }
-                if (mounted) Navigator.pop(context);
+                
+                // context.mounted is used for Stateful widgets 
+                //while mounted is used for the State object itself.
+                if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Save'),
             ),

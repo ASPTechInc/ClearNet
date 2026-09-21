@@ -7,27 +7,71 @@
 
 // Flutter imports:
 
+// Flutter imports:
+import 'package:flutter/services.dart';
+
 // Package imports:
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Project imports:
 import 'package:clearnet/main.dart';
+import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    PackageInfo.setMockInitialValues(
+      appName: 'ClearNet',
+      packageName: 'com.example.clearnet',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
+
+    // Mock Path Provider
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            return '.';
+          },
+        );
+
+    // Mock Main Method Channel
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel(Constants.methodChannelName),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'isAccessibilityServiceEnabled') {
+              return true; // Prevent Accessibility Dialog from showing
+            }
+            if (methodCall.method == 'checkInitialAction') {
+              return null;
+            }
+            return null;
+          },
+        );
+  });
+
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-    
-    // Allow BiometricLockScreen to complete its async check
-    await tester.pump(); 
+    await tester.pumpWidget(const ClearNetApp());
+
+    // Allow initializations to complete
+    await tester.pump();
     await tester.pumpAndSettle();
 
-    // Verify that the app starts. It should land on HomeScreen which has 
-    // the app name in the AppBar, or PinLockScreen if a PIN is set.
-    final homeFound = find.text('ClearNet').evaluate().isNotEmpty;
-    final pinFound = find.text('Enter PIN').evaluate().isNotEmpty;
-    
-    expect(homeFound || pinFound, isTrue, 
-        reason: 'App should start at either HomeScreen ("ClearNet") or PinLockScreen ("Enter PIN")');
+    // Verify that the app starts. It should land on HomeScreen which has
+    // the app name in the AppBar.
+    expect(find.text('ClearNet'), findsOneWidget);
+
+    // Clear pending timers to avoid test failure
+    await tester.pump(const Duration(seconds: 2));
   });
 }

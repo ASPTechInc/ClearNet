@@ -1,11 +1,11 @@
 [versions]
 annotationJvm = "1.11.0-rc01"
-gradle = "9.4.0"
-kotlinGradlePlugin = "2.4.20"
-kotlinxSerializationJson = "1.11.0"
-mockitoCore = "5.23.0"
-mockk = "1.14.11"
-compileSdk = "37"
+gradle = "8.9.3"
+kotlinGradlePlugin = "2.0.21"
+kotlinxSerializationJson = "1.7.3"
+mockitoCore = "5.14.2"
+mockk = "1.13.13"
+compileSdk = "36"
 
 [libraries]
 androidx-annotation-jvm = { group = "androidx.annotation", name = "annotation-jvm", version.ref = "annotationJvm" }

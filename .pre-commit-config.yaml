@@ -4,7 +4,7 @@ repos:
   - repo: local
     hooks:
       - id: flutter-import-sorter
-        name: Flutter Import Sorter
+        name: Flutter import sorter
         entry: dart run import_sorter:main
         language: system
         files: \.dart$

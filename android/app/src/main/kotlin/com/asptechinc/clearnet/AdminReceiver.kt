@@ -14,7 +14,7 @@ class AdminReceiver : DeviceAdminReceiver() {
 
     /**
      * Intercepts requests to disable device admin privileges.
-     * Launches the PIN verification activity to prevent unauthorized deactivation/uninstallation.
+     * Launches the PIN verification activity to prevent unauthorised deactivation/uninstallation.
      *
      * @param context The application context.
      * @param intent The incoming disable request intent.

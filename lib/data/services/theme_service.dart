@@ -13,17 +13,16 @@ class ThemeService {
   static final ThemeService _instance = ThemeService._internal();
 
   static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
+  final _prefs = SharedPreferencesAsync();
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeName = prefs.getString(Constants.themeModeKey) ?? 'system';
+    final themeName = await _prefs.getString(Constants.themeModeKey) ?? 'system';
     themeModeNotifier.value = _themeModeFromName(themeName);
   }
 
   Future<void> updateThemeMode(ThemeMode mode) async {
     themeModeNotifier.value = mode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(Constants.themeModeKey, mode.name);
+    await _prefs.setString(Constants.themeModeKey, mode.name);
   }
 
   ThemeMode _themeModeFromName(String name) {

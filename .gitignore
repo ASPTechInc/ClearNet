@@ -7,6 +7,7 @@
 .buildlog/
 .history
 *.iml
+.idea/
 
 # Mac/Linux/Windows
 .DS_Store
@@ -53,18 +54,18 @@ unlinked_spec.ds
 
 # Android related
 .gradle/
-**/android/captures/
-**/android/local.properties
-**/android/**/GeneratedPluginRegistrant.java
-**/android/key.properties
+.kotlin/
+captures/
+local.properties
+**/GeneratedPluginRegistrant.java
+key.properties
 *.jks
 *.apk
 *.aab
 *.aar
 *.keystore.properties
 keystore.properties
-**/android/.idea/
-.idea/
+*.hprof
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -127,7 +128,7 @@ app.*.symbols
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
 
-# Artefats
+# Artefacts
 .artifacts/
 clear_net/
 

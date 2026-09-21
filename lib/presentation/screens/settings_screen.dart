@@ -29,13 +29,16 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   static const platform = MethodChannel(Constants.methodChannelName);
   final storage = const FlutterSecureStorage();
+  final _prefs = SharedPreferencesAsync();
 
   bool _appLockEnabled = false;
   bool _lockSettingsEnabled = false;
   bool _isPinSet = false;
   bool _isSettingsPinSet = false;
+  String _currentDisguise = 'none';
+  Map<String, dynamic>? _batteryStats;
   final _dnsController = TextEditingController();
-  
+
   String _appVersion = '1.0.0';
   bool _isUpdateAvailable = false;
   String _latestVersion = '';
@@ -59,9 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final appLock = await storage.read(key: Constants.appLockEnabledKey);
     final pin = await storage.read(key: Constants.uninstallPinKey);
     final settingsPin = await storage.read(key: Constants.settingsLockPinKey);
-    final prefs = await SharedPreferences.getInstance();
-    final customDns = prefs.getString('custom_dns') ?? '';
-    final lockSettings = prefs.getBool(Constants.lockSettingsKey) ?? false;
+    final customDns = await _prefs.getString('custom_dns') ?? '';
+    final lockSettings = await _prefs.getBool(Constants.lockSettingsKey) ?? false;
+    final disguise = await _prefs.getString(Constants.appDisguiseKey) ?? 'none';
     _dnsController.text = customDns;
     if (!mounted) return;
     setState(() {
@@ -69,15 +72,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lockSettingsEnabled = lockSettings;
       _isPinSet = pin != null;
       _isSettingsPinSet = settingsPin != null;
+      _currentDisguise = disguise;
     });
+    unawaited(_loadBatteryStats());
+  }
+
+  Future<void> _loadBatteryStats() async {
+    try {
+      final stats = await platform.invokeMapMethod<String, dynamic>(
+        'getBatteryStats',
+      );
+      if (mounted) {
+        setState(() => _batteryStats = stats);
+      }
+    } catch (e) {
+      debugPrint('Failed to load battery stats: $e');
+    }
+  }
+
+  Future<void> _changeDisguise(String disguise) async {
+    try {
+      await platform.invokeMethod('setAppDisguise', {'disguise': disguise});
+      await _prefs.setString(Constants.appDisguiseKey, disguise);
+      setState(() => _currentDisguise = disguise);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Disguise set to ${disguise.toUpperCase()}. It may take a few moments to update the launcher.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to set disguise: $e');
+    }
+  }
+
+  Future<void> _requestIgnoreBatteryOptimizations() async {
+    try {
+      await platform.invokeMethod('requestIgnoreBatteryOptimizations');
+      await Future.delayed(const Duration(seconds: 2));
+      await _loadBatteryStats();
+    } catch (e) {
+      debugPrint('Failed to request battery optimization ignore: $e');
+    }
   }
 
   Future<void> _saveCustomDns(String value) async {
-    final prefs = await SharedPreferences.getInstance();
     if (value.trim().isEmpty) {
-      await prefs.remove('custom_dns');
+      await _prefs.remove('custom_dns');
     } else {
-      await prefs.setString('custom_dns', value.trim());
+      await _prefs.setString('custom_dns', value.trim());
     }
   }
 
@@ -89,9 +135,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       return;
     }
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(Constants.lockSettingsKey, value);
+
+    await _prefs.setBool(Constants.lockSettingsKey, value);
     setState(() {
       _lockSettingsEnabled = value;
     });
@@ -101,14 +146,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (value && !_isPinSet) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set an Uninstall PIN first'),
-        ),
+        const SnackBar(content: Text('Please set an Uninstall PIN first')),
       );
       return;
     }
 
-    await storage.write(key: Constants.appLockEnabledKey, value: value.toString());
+    await storage.write(
+      key: Constants.appLockEnabledKey,
+      value: value.toString(),
+    );
     setState(() {
       _appLockEnabled = value;
     });
@@ -120,9 +166,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Set Permanent PIN'),
+        title: const Text('Set permanent PIN'),
         content: const Text(
-          'This Uninstall PIN will be used for biometric fallback and uninstallation protection. '
+          'This Uninstall PIN will be used for app access and uninstallation protection. '
           'Once set, it CANNOT be changed or reset for security reasons. '
           'Do you want to proceed?',
         ),
@@ -190,14 +236,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Verify Settings PIN',
           onSuccess: () async {
             await storage.delete(key: Constants.settingsLockPinKey);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.remove(Constants.settingsLockPinKey);
-            await prefs.setBool(Constants.lockSettingsKey, false);
+            await _prefs.remove(Constants.settingsLockPinKey);
+            await _prefs.setBool(Constants.lockSettingsKey, false);
             if (!mounted) return;
             Navigator.pop(context);
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Settings PIN removed')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Settings PIN removed')),
+            );
           },
         ),
       ),
@@ -219,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         final currentMode = ThemeService.themeModeNotifier.value;
         return AlertDialog(
-          title: const Text('Choose Theme'),
+          title: const Text('Choose theme'),
           content: RadioGroup<ThemeMode>(
             groupValue: currentMode,
             onChanged: (ThemeMode? value) async {
@@ -234,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<ThemeMode>(
-                  title: Text('Follow System'),
+                  title: Text('Follow system'),
                   value: ThemeMode.system,
                 ),
                 RadioListTile<ThemeMode>(
@@ -250,6 +295,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showDisguiseDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose app disguise'),
+        content: RadioGroup(
+          groupValue: _currentDisguise,
+          onChanged: (value) async {
+            if (value != null) {
+              Navigator.pop(context);
+              _changeDisguise(value);
+            }
+          },
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: Text('None (Default)'),
+                value: 'none',
+              ),
+              RadioListTile<String>(
+                title: Text('Calculator'),
+                value: 'calculator',
+              ),
+              RadioListTile<String>(title: Text('Notes'), value: 'notes'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showBatteryAuditDialog() async {
+    await _loadBatteryStats();
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Battery performance audit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAuditItem(
+              'Background optimization',
+              _batteryStats?['isIgnoringOptimizations'] == true
+                  ? 'Disabled (Good)'
+                  : 'Enabled (Restricted)',
+              _batteryStats?['isIgnoringOptimizations'] == true
+                  ? Icons.check_circle
+                  : Icons.warning,
+              _batteryStats?['isIgnoringOptimizations'] == true
+                  ? Colors.green
+                  : Colors.orange,
+            ),
+            const SizedBox(height: 12),
+            _buildAuditItem(
+              'VPN Service status',
+              _batteryStats?['vpnActive'] == true ? 'Running' : 'Inactive',
+              Icons.lan_outlined,
+              _batteryStats?['vpnActive'] == true ? Colors.blue : Colors.grey,
+            ),
+            if (_batteryStats?['vpnActive'] == true) ...[
+              const SizedBox(height: 12),
+              _buildAuditItem(
+                'Uptime',
+                '${_batteryStats?['uptimeMinutes']} minutes',
+                Icons.timer_outlined,
+                Colors.blue,
+              ),
+              const SizedBox(height: 12),
+              _buildAuditItem(
+                'Packets analyzed',
+                '${_batteryStats?['packetsProcessed']}',
+                Icons.analytics_outlined,
+                Colors.blue,
+              ),
+            ],
+            const SizedBox(height: 20),
+            const Text(
+              'For the VPN and Website Blocking to work reliably, please disable battery optimization for ClearNet.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          if (_batteryStats?['isIgnoringOptimizations'] != true)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _requestIgnoreBatteryOptimizations();
+              },
+              child: const Text('Disable optimization'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuditItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            Text(value, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ],
     );
   }
 
@@ -303,113 +476,126 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Extract version: e.g., [v1.0.0]
       final versionMatch = RegExp(r'\[(v.*?)\]').firstMatch(trimmedBlock);
       // Extract date: e.g., (2026-09-18)
-      final dateMatch = RegExp(r'\((\d{4}-\d{2}-\d{2})\)').firstMatch(trimmedBlock);
-      
+      final dateMatch = RegExp(
+        r'\((\d{4}-\d{2}-\d{2})\)',
+      ).firstMatch(trimmedBlock);
+
       final version = versionMatch?.group(1) ?? 'Update';
       final date = dateMatch?.group(1) ?? '';
 
       // Extract features (lines starting with '-')
       final lines = trimmedBlock.split('\n');
       final List<String> features = [];
-      String? description;
+      //String? description;
 
       for (var line in lines) {
         final trimmedLine = line.trim();
         if (trimmedLine.startsWith('-')) {
           features.add(trimmedLine.substring(1).trim());
-        } else if (trimmedLine.isNotEmpty && 
-                   !trimmedLine.startsWith('#') && 
-                   !trimmedLine.startsWith('!')) {
+        } else if (trimmedLine.isNotEmpty &&
+            !trimmedLine.startsWith('#') &&
+            !trimmedLine.startsWith('!')) {
           // Capture the description text if it's not a header
-          if (description == null) {
-            description = trimmedLine;
-          } else {
-            description += ' $trimmedLine';
-          }
+          // if (description == null) {
+          //   description = trimmedLine;
+          // } else {
+          //   description += ' $trimmedLine';
+          // }
         }
       }
 
-      widgets.add(Card(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 0,
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+      widgets.add(
+        Card(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          elevation: 0,
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                version,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.pink,
-                      letterSpacing: 0.5,
-                    ),
-              ),
-              if (date.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    date,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  version,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              const SizedBox(height: 16),
-              if (description != null && description.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: RichText(
-                    text: TextSpan(
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            height: 1.4,
+                if (date.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      date,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                // if (description != null && description.isNotEmpty)
+                //   Padding(
+                //     padding: const EdgeInsets.only(bottom: 16.0),
+                //     child: RichText(
+                //       text: TextSpan(
+                //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                //               color: Theme.of(context).colorScheme.onSurface,
+                //               height: 1.4,
+                //             ),
+                //         children: _parseBoldText(description),
+                //       ),
+                //     ),
+                //   ),
+                ...features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0, right: 12.0),
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                      children: _parseBoldText(description),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                    height: 1.4,
+                                  ),
+                              children: _parseBoldText(feature),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ...features.map((feature) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, right: 12.0),
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Colors.pink,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                height: 1.4,
-                              ),
-                          children: _parseBoldText(feature),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-            ],
+              ],
+            ),
           ),
         ),
-      ));
+      );
     }
 
     if (widgets.isEmpty) {
@@ -424,10 +610,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final parts = text.split('**');
     for (int i = 0; i < parts.length; i++) {
       if (i % 2 == 1) {
-        spans.add(TextSpan(
-          text: parts[i],
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ));
+        spans.add(
+          TextSpan(
+            text: parts[i],
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
       } else {
         spans.add(TextSpan(text: parts[i]));
       }
@@ -439,9 +627,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.inAppWebView)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not launch $url')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
       }
     }
   }
@@ -461,7 +649,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Simple version comparison (e.g. v1.1.0 vs 1.0.0)
         final currentVersion = _appVersion.split('+')[0];
         final cleanLatest = latestTag.replaceAll('v', '');
-        
+
         if (cleanLatest != currentVersion) {
           setState(() {
             _isUpdateAvailable = true;
@@ -469,9 +657,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           });
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('App is up to date')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('App is up to date')));
           }
         }
       }
@@ -502,8 +690,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
-            subtitle: Text(ThemeService.themeModeNotifier.value.name[0].toUpperCase() + 
-                           ThemeService.themeModeNotifier.value.name.substring(1)),
+            subtitle: Text(
+              ThemeService.themeModeNotifier.value.name[0].toUpperCase() +
+                  ThemeService.themeModeNotifier.value.name.substring(1),
+            ),
             onTap: _showThemeDialog,
           ),
           const Divider(),
@@ -516,9 +706,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.accessibility_new, color: Colors.blue),
-            title: const Text('Enable Safe Browsing Service'),
+            title: const Text('Enable safe browsing service'),
             subtitle: const Text(
-              'Required for blocking sites while using a VPN',
+              'Required for blocking websites while using a VPN',
             ),
             onTap: _openAccessibilitySettings,
           ),
@@ -531,24 +721,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           SwitchListTile(
-            title: const Text('Enable PIN for App'),
+            title: const Text('Set app PIN'),
             value: _appLockEnabled,
             onChanged: _toggleAppLock,
           ),
           SwitchListTile(
             title: const Text('Lock settings with PIN'),
-            subtitle: const Text('Requires Settings PIN to access this screen'),
+            subtitle: const Text(
+              'Requires a PIN to access this (Settings) screen',
+            ),
             value: _lockSettingsEnabled,
             onChanged: _toggleLockSettings,
           ),
           ListTile(
-            title: Text(_isSettingsPinSet ? 'Change settings PIN' : 'Set settings PIN'),
+            title: const Text('Disguise mode'),
+            subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
+            leading: const Icon(Icons.theater_comedy_outlined),
+            onTap: _showDisguiseDialog,
+          ),
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Battery & Performance',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.battery_saver_outlined),
+            title: const Text('Battery optimization audit'),
+            subtitle: Text(
+              _batteryStats?['isIgnoringOptimizations'] == true
+                  ? 'Optimized for background performance'
+                  : 'Background activity may be restricted by system',
+            ),
+            onTap: _showBatteryAuditDialog,
+          ),
+          ListTile(
+            title: Text(
+              _isSettingsPinSet ? 'Change settings PIN' : 'Set settings PIN',
+            ),
             leading: const Icon(Icons.password),
             onTap: _setupSettingsPin,
           ),
           if (_isSettingsPinSet)
             ListTile(
-              title: const Text('Remove Settings PIN'),
+              title: const Text('Remove settings PIN'),
               leading: const Icon(Icons.delete_outline),
               onTap: _removeSettingsPin,
             ),
@@ -556,16 +774,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Uninstall Protection',
+              'Uninstall protection',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ListTile(
             title: const Text('Uninstall PIN'),
-            subtitle: Text(_isPinSet 
-              ? 'PIN is set and permanent' 
-              : 'Set a PIN to prevent unauthorized uninstallation'),
-            trailing: _isPinSet ? const Icon(Icons.lock, color: Colors.green) : null,
+            subtitle: Text(
+              _isPinSet
+                  ? 'PIN is set and permanent'
+                  : 'Set a PIN to prevent unauthorised uninstallation of the application',
+            ),
+            trailing: _isPinSet
+                ? const Icon(Icons.lock, color: Colors.green)
+                : null,
             onTap: _isPinSet ? null : _setupPin,
             enabled: !_isPinSet,
           ),
@@ -586,12 +808,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: TextField(
               controller: _dnsController,
               decoration: const InputDecoration(
-                labelText: 'Custom upstream DNS server',
-                hintText: 'e.g., 9.9.9.9 (Leave blank for default FOSS cluster)',
+                labelText: 'Enter a custom upstream DNS server',
+                hintText: 'e.g. 9.9.9.9 (Leave blank for default FOSS cluster)',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.url,
@@ -664,7 +889,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.coffee_outlined, color: Colors.brown),
             title: const Text('Donate'),
-            subtitle: const Text('Buy me a coffee'),
+            subtitle: const Text(
+              'Support lead app developer by buying a coffee',
+            ),
             onTap: () => _launchUrl(Constants.buyMeACoffeeUrl),
           ),
           const Divider(),
@@ -678,24 +905,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.system_update_outlined),
             title: const Text('App updater'),
-            subtitle: _isUpdateAvailable 
+            subtitle: _isUpdateAvailable
                 ? Text('New version available: $_latestVersion')
                 : const Text('Check for latest releases'),
-            trailing: _isCheckingUpdate 
+            trailing: _isCheckingUpdate
                 ? const SizedBox(
-                    width: 20, 
-                    height: 20, 
-                    child: CircularProgressIndicator(strokeWidth: 2)
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : _isUpdateAvailable 
-                    ? ElevatedButton(
-                        onPressed: () => _launchUrl(Constants.releasesUrl),
-                        child: const Text('Update now'),
-                      )
-                    : TextButton(
-                        onPressed: _checkUpdates,
-                        child: const Text('Check for updates'),
-                      ),
+                : _isUpdateAvailable
+                ? ElevatedButton(
+                    onPressed: () => _launchUrl(Constants.releasesUrl),
+                    child: const Text('Update now'),
+                  )
+                : TextButton(
+                    onPressed: _checkUpdates,
+                    child: const Text('Check updates'),
+                  ),
           ),
           const SizedBox(height: 32),
         ],

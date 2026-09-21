@@ -22,6 +22,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(VpnController.platform, (methodCall) async {
         methodLog.add(methodCall);
+        if (methodCall.method == 'isAccessibilityServiceEnabled') return true;
         return null;
       });
     });
@@ -45,7 +46,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      expect(find.text('Blocking Paused'), findsOneWidget);
+      expect(find.text('Blocking paused'), findsOneWidget);
       expect(find.text('ClearNet is Idle'), findsOneWidget);
     });
 
@@ -56,7 +57,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      expect(find.text('Blocking Active'), findsOneWidget);
+      expect(find.text('Blocking active'), findsOneWidget);
       expect(find.text('ClearNet is Guarding'), findsOneWidget);
     });
 
@@ -77,7 +78,7 @@ void main() {
 
       // Verify VPN start called
       expect(methodLog.any((c) => c.method == 'startVpn'), true);
-      expect(find.text('Blocking Active'), findsOneWidget);
+      expect(find.text('Blocking active'), findsOneWidget);
 
       // Toggle back
       await tester.tap(switchFinder);
@@ -97,19 +98,20 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      expect(find.text("Today's activity"), findsOneWidget);
       expect(find.text('42'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });
 
-    testWidgets('Configure Protection button navigates to settings', (WidgetTester tester) async {
+    testWidgets('Settings icon in AppBar navigates to settings', (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({
         Constants.lockSettingsKey: false,
       });
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.text('Configure Protection');
-      await tester.tap(buttonFinder);
+      final settingsIconFinder = find.byIcon(Icons.settings);
+      await tester.tap(settingsIconFinder);
       await tester.pumpAndSettle();
 
       expect(find.text('Settings Screen'), findsOneWidget);

@@ -42,10 +42,9 @@ class AppBlockService : AccessibilityService() {
         val eventType = event.eventType
         val packageName = event.packageName?.toString() ?: ""
 
-        // Fetch user preferences shared with the Flutter frontend
-        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val isBlockingEnabled = prefs.getBoolean("flutter.is_blocking_enabled", false)
-        if (!isBlockingEnabled) return
+        // Fetch user preferences shared with the Flutter frontend (Jetpack DataStore)
+        val data = DataStoreReader.readData(this)
+        if (!data.isBlockingEnabled) return
 
         // 1. App Blocking Logic
         if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
@@ -53,10 +52,11 @@ class AppBlockService : AccessibilityService() {
 
             Log.d(TAG, "Foreground app changed to: $packageName")
             
-            // Sync current lists of blacklisted sites and keywords from preferences
-            loadBlockedData()
+            // Sync current lists of blacklisted sites and keywords
+            this.blockedSites = data.blockedSites.toMutableSet()
+            this.blockedKeywords = data.blockedKeywords.toMutableSet()
             
-            val blockedApps = getBlockedApps(prefs)
+            val blockedApps = data.blockedApps
             
             // Redirect the user if they attempt to launch a blocked application
             if (blockedApps.contains(packageName)) {
@@ -116,7 +116,7 @@ class AppBlockService : AccessibilityService() {
      */
     private fun loadBlockedData() {
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        
+
         // Load Blocked Domains
         try {
             val savedSites = prefs.getStringSet("flutter.blocked_sites", null)
@@ -211,7 +211,7 @@ class AppBlockService : AccessibilityService() {
     }
 
     /**
-     * Closes the current unauthorized viewport by bringing the user back to the home launcher
+     * Closes the current unauthorised viewport by bringing the user back to the home launcher
      * and displaying the explicit ClearNet blocked view.
      */
     private fun blockAccess(reason: String) {

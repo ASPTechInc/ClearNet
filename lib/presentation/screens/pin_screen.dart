@@ -27,6 +27,7 @@ class PinLockScreen extends StatefulWidget {
 
 class _PinLockScreenState extends State<PinLockScreen> {
   final storage = const FlutterSecureStorage();
+  final _prefs = SharedPreferencesAsync();
   final _pinController = TextEditingController();
   String? _firstEntry;
 
@@ -88,8 +89,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
         }
 
         await storage.write(key: widget.pinKey, value: enteredPin);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(widget.pinKey, enteredPin);
+        await _prefs.setString(widget.pinKey, enteredPin);
         widget.onSuccess?.call();
       } else {
         ScaffoldMessenger.of(

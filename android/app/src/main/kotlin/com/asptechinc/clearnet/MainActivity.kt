@@ -2,6 +2,14 @@ package com.asptechinc.clearnet
 
 import android.content.Intent
 import android.net.VpnService
+import android.accessibilityservice.AccessibilityService
+import android.content.ComponentName
+import android.content.Context
+import android.provider.Settings
+import android.text.TextUtils
+import android.os.PowerManager
+import android.content.pm.PackageManager
+import android.net.Uri
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -79,7 +87,7 @@ class MainActivity : FlutterActivity() {
                 }
                 "openAccessibilitySettings" -> {
                     // Redirects the user directly to system accessibility service parameters
-                    val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                     startActivity(intent)
                     result.success(true)
                 }
@@ -87,6 +95,25 @@ class MainActivity : FlutterActivity() {
                     // Fetches lists of user-installed packages to display in the block options
                     val apps = getInstalledApps()
                     result.success(apps)
+                }
+                "isAccessibilityServiceEnabled" -> {
+                    val enabled = isAccessibilityServiceEnabled(this, AppBlockService::class.java)
+                    result.success(enabled)
+                }
+                "setAppDisguise" -> {
+                    val disguise = call.argument<String>("disguise") ?: "none"
+                    setAppDisguise(disguise)
+                    result.success(true)
+                }
+                "isIgnoringBatteryOptimizations" -> {
+                    result.success(isIgnoringBatteryOptimizations())
+                }
+                "requestIgnoreBatteryOptimizations" -> {
+                    requestIgnoreBatteryOptimizations()
+                    result.success(true)
+                }
+                "getBatteryStats" -> {
+                    result.success(getBatteryStats())
                 }
                 else -> result.notImplemented()
             }
@@ -99,13 +126,21 @@ class MainActivity : FlutterActivity() {
     /**
      * Scans and compiles a sorted list of non-system packages installed on the device.
      * Exposes app labels and package identifiers to the Flutter settings UI.
+     * 
+     * Note: On Android 11+ (API 30+), this requires <queries> in the manifest
+     * or the QUERY_ALL_PACKAGES permission to see apps other than the system ones.
      */
     private fun getInstalledApps(): List<Map<String, String>> {
         val pm = packageManager
-        val apps = pm.getInstalledApplications(0)
+        val mainIntent = Intent(Intent.ACTION_MAIN, null)
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
+        
+        // Query for apps with a launcher activity, which respects the <queries> element in the manifest
+        val apps = pm.queryIntentActivities(mainIntent, 0)
         val appList = mutableListOf<Map<String, String>>()
 
-        for (app in apps) {
+        for (info in apps) {
+            val app = info.activityInfo.applicationInfo
             val name = pm.getApplicationLabel(app).toString()
             val packageName = app.packageName
             val isSystem = (app.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
@@ -118,7 +153,7 @@ class MainActivity : FlutterActivity() {
                 ))
             }
         }
-        return appList.sortedBy { it["name"] }
+        return appList.distinctBy { it["packageName"] }.sortedBy { it["name"] }
     }
 
     /**
@@ -141,5 +176,73 @@ class MainActivity : FlutterActivity() {
                 pendingShowBlocked = true
             }
         }
+    }
+
+    /**
+     * Checks if the specific Accessibility Service is currently enabled in system settings.
+     */
+    private fun isAccessibilityServiceEnabled(context: Context, service: Class<out AccessibilityService>): Boolean {
+        val expectedComponentName = ComponentName(context, service)
+        val enabledServicesSetting = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        val colonSplitter = TextUtils.SimpleStringSplitter(':')
+        colonSplitter.setString(enabledServicesSetting)
+
+        while (colonSplitter.hasNext()) {
+            val componentNameString = colonSplitter.next()
+            val enabledService = ComponentName.unflattenFromString(componentNameString)
+            if (enabledService != null && enabledService == expectedComponentName) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun setAppDisguise(disguise: String) {
+        val pm = packageManager
+        val pkgName = packageName
+        
+        val components = mapOf(
+            "none" to ComponentName(pkgName, "$pkgName.MainActivity"),
+            "calculator" to ComponentName(pkgName, "$pkgName.CalculatorActivity"),
+            "notes" to ComponentName(pkgName, "$pkgName.NotesActivity")
+        )
+
+        components.forEach { (name, component) ->
+            val state = if (name == disguise) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+            pm.setComponentEnabledSetting(component, state, PackageManager.DONT_KILL_APP)
+        }
+    }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        return pm.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        if (!isIgnoringBatteryOptimizations()) {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun getBatteryStats(): Map<String, Any> {
+        val vpn = SafeVpnService.instance
+        return mapOf(
+            "isIgnoringOptimizations" to isIgnoringBatteryOptimizations(),
+            "vpnActive" to (vpn != null),
+            "uptimeMinutes" to (vpn?.getUptimeMinutes() ?: 0L),
+            "packetsProcessed" to (vpn?.getPacketsProcessed() ?: 0L),
+            "packetsBlocked" to (vpn?.getPacketsBlocked() ?: 0L)
+        )
     }
 }

@@ -14,6 +14,7 @@ class Constants {
   static const String appLockEnabledKey = 'app_lock_enabled';
   static const String uninstallPinKey = 'uninstall_pin';
   static const String settingsLockPinKey = 'settings_lock_pin';
+  static const String appDisguiseKey = 'app_disguise';
   
   static const String githubRepoUrl = 'https://github.com/asptechinc/clearnet';
   static const String privacyPolicyUrl = 'https://github.com/asptechinc/clearnet/blob/main/PRIVACY_POLICY.md';
