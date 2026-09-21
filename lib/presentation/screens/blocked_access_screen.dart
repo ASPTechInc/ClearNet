@@ -1,11 +1,14 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // Project imports:
-import 'package:clearnet/presentation/navigation/app_routes.dart';
+import 'package:clearnet/shared/utilities/constants.dart';
 
 class BlockedAccessScreen extends StatelessWidget {
   const BlockedAccessScreen({super.key});
+
+  static const platform = MethodChannel(Constants.methodChannelName);
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +69,7 @@ class BlockedAccessScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+                    platform.invokeMethod('goHome');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
@@ -78,7 +81,7 @@ class BlockedAccessScreen extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Back to Safe Home',
+                    'Okay',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),

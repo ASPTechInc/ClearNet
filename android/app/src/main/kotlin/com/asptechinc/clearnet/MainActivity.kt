@@ -13,6 +13,7 @@ import android.net.Uri
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import androidx.core.net.toUri
 
 /**
  * MainActivity serves as the main entrance point to the application, extending FlutterActivity.
@@ -114,6 +115,23 @@ class MainActivity : FlutterActivity() {
                 }
                 "getBatteryStats" -> {
                     result.success(getBatteryStats())
+                }
+                "getStats" -> {
+                    val stats = NativeStatsManager.getStats(this)
+                    val map = mutableMapOf<String, Any>()
+                    val keys = stats.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        map[key] = stats.get(key)
+                    }
+                    result.success(map)
+                }
+                "goHome" -> {
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.addCategory(Intent.CATEGORY_HOME)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }
@@ -229,7 +247,7 @@ class MainActivity : FlutterActivity() {
     private fun requestIgnoreBatteryOptimizations() {
         if (!isIgnoringBatteryOptimizations()) {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:$packageName")
+                data = "package:$packageName".toUri()
             }
             startActivity(intent)
         }

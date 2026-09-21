@@ -26,6 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isBlockingEnabled = false;
   int _websitesBlocked = 0;
   int _appsBlocked = 0;
+  int _weeklyWebsites = 0;
+  int _weeklyApps = 0;
+  int _monthlyWebsites = 0;
+  int _monthlyApps = 0;
 
   @override
   void initState() {
@@ -36,6 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final webCount = await StatsManager.getBlockedWebsitesCount();
     final appCount = await StatsManager.getBlockedAppsCount();
+    final weeklyWeb = await StatsManager.getWeeklyWebsitesCount();
+    final weeklyApp = await StatsManager.getWeeklyAppsCount();
+    final monthlyWeb = await StatsManager.getMonthlyWebsitesCount();
+    final monthlyApp = await StatsManager.getMonthlyAppsCount();
+    
     final isEnabled = await _prefs.getBool('is_blocking_enabled') ?? false;
 
     if (!mounted) return;
@@ -43,6 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _isBlockingEnabled = isEnabled;
       _websitesBlocked = webCount;
       _appsBlocked = appCount;
+      _weeklyWebsites = weeklyWeb;
+      _weeklyApps = weeklyApp;
+      _monthlyWebsites = monthlyWeb;
+      _monthlyApps = monthlyApp;
     });
   }
 
@@ -219,8 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(Icons.public, _websitesBlocked, 'Websites'),
-                _buildStatItem(Icons.apps, _appsBlocked, 'Apps'),
+                _buildStatItem(Icons.public, _websitesBlocked, 'Websites', _weeklyWebsites, _monthlyWebsites),
+                _buildStatItem(Icons.apps, _appsBlocked, 'Apps', _weeklyApps, _monthlyApps),
               ],
             ),
           ],
@@ -229,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, int count, String label) {
+  Widget _buildStatItem(IconData icon, int count, String label, int weekly, int monthly) {
     return Column(
       children: [
         Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
@@ -238,7 +251,15 @@ class _HomeScreenState extends State<HomeScreen> {
           count.toString(),
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        Text(label, style: const TextStyle(color: Colors.grey)),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 8),
+        Text(
+          'W: $weekly | M: $monthly',
+          style: TextStyle(
+            color: Colors.grey.withValues(alpha: 0.7),
+            fontSize: 10,
+          ),
+        ),
       ],
     );
   }
