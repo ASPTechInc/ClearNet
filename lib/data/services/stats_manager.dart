@@ -1,30 +1,54 @@
-// Package imports:
-import 'package:shared_preferences/shared_preferences.dart';
+// Dart imports:
+import 'dart:async';
+
+// Flutter imports:
+import 'package:flutter/services.dart';
 
 // Project imports:
 import 'package:clearnet/shared/utilities/constants.dart';
 
 class StatsManager {
-  static final _prefs = SharedPreferencesAsync();
+  static const platform = MethodChannel(Constants.methodChannelName);
 
-  static Future<void> checkAndResetDailyStats() async {
-    final lastDate = await _prefs.getString(Constants.lastStatsDateKey);
-    final nowDate = DateTime.now().toIso8601String().split('T')[0];
-
-    if (lastDate != nowDate) {
-      await _prefs.setInt(Constants.blockedWebsitesCountKey, 0);
-      await _prefs.setInt(Constants.blockedAppsCountKey, 0);
-      await _prefs.setString(Constants.lastStatsDateKey, nowDate);
+  static Future<Map<String, dynamic>> _getNativeStats() async {
+    try {
+      final Map<dynamic, dynamic>? stats = await platform.invokeMethod('getStats');
+      if (stats != null) {
+        return Map<String, dynamic>.from(stats);
+      }
+    } catch (e) {
+      // Ignore errors
     }
+    return {};
   }
 
   static Future<int> getBlockedWebsitesCount() async {
-    await checkAndResetDailyStats();
-    return await _prefs.getInt(Constants.blockedWebsitesCountKey) ?? 0;
+    final stats = await _getNativeStats();
+    return stats[Constants.blockedWebsitesCountKey] ?? 0;
   }
 
   static Future<int> getBlockedAppsCount() async {
-    await checkAndResetDailyStats();
-    return await _prefs.getInt(Constants.blockedAppsCountKey) ?? 0;
+    final stats = await _getNativeStats();
+    return stats[Constants.blockedAppsCountKey] ?? 0;
+  }
+
+  static Future<int> getWeeklyWebsitesCount() async {
+    final stats = await _getNativeStats();
+    return stats[Constants.weeklyWebsitesCountKey] ?? 0;
+  }
+
+  static Future<int> getWeeklyAppsCount() async {
+    final stats = await _getNativeStats();
+    return stats[Constants.weeklyAppsCountKey] ?? 0;
+  }
+
+  static Future<int> getMonthlyWebsitesCount() async {
+    final stats = await _getNativeStats();
+    return stats[Constants.monthlyWebsitesCountKey] ?? 0;
+  }
+
+  static Future<int> getMonthlyAppsCount() async {
+    final stats = await _getNativeStats();
+    return stats[Constants.monthlyAppsCountKey] ?? 0;
   }
 }

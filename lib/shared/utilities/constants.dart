@@ -9,7 +9,15 @@ class Constants {
   static const String blockedAppsKey = 'blocked_apps';
   static const String blockedWebsitesCountKey = 'blocked_websites_count';
   static const String blockedAppsCountKey = 'blocked_apps_count';
+  
+  static const String weeklyWebsitesCountKey = 'weekly_websites_count';
+  static const String weeklyAppsCountKey = 'weekly_apps_count';
+  static const String monthlyWebsitesCountKey = 'monthly_websites_count';
+  static const String monthlyAppsCountKey = 'monthly_apps_count';
+
   static const String lastStatsDateKey = 'last_stats_date';
+  static const String lastWeeklyResetKey = 'last_weekly_reset';
+  static const String lastMonthlyResetKey = 'last_monthly_reset';
   static const String lockSettingsKey = 'lock_settings';
   static const String appLockEnabledKey = 'app_lock_enabled';
   static const String uninstallPinKey = 'uninstall_pin';

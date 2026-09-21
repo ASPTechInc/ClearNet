@@ -96,18 +96,14 @@ class AppBlockService : AccessibilityService() {
      * Updates the persistent statistics counter for blocked apps.
      */
     private fun incrementAppBlockCount() {
-        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val current = prefs.getInt("flutter.blocked_apps_count", 0)
-        prefs.edit().putInt("flutter.blocked_apps_count", current + 1).apply()
+        NativeStatsManager.incrementBlockedApp(this)
     }
 
     /**
      * Updates the persistent statistics counter for blocked websites/content.
      */
     private fun incrementWebsiteBlockCount() {
-        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val current = prefs.getInt("flutter.blocked_websites_count", 0)
-        prefs.edit().putInt("flutter.blocked_websites_count", current + 1).apply()
+        NativeStatsManager.incrementBlockedWebsite(this)
     }
 
     /**
