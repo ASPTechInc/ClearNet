@@ -18,6 +18,7 @@ import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
+import 'package:clearnet/shared/utilities/helpers.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -36,7 +37,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isPinSet = false;
   bool _isSettingsPinSet = false;
   String _currentDisguise = 'none';
-  Map<String, dynamic>? _batteryStats;
   final _dnsController = TextEditingController();
 
   String _appVersion = '1.0.0';
@@ -74,21 +74,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isSettingsPinSet = settingsPin != null;
       _currentDisguise = disguise;
     });
-    unawaited(_loadBatteryStats());
   }
 
-  Future<void> _loadBatteryStats() async {
-    try {
-      final stats = await platform.invokeMapMethod<String, dynamic>(
-        'getBatteryStats',
-      );
-      if (mounted) {
-        setState(() => _batteryStats = stats);
-      }
-    } catch (e) {
-      debugPrint('Failed to load battery stats: $e');
-    }
-  }
 
   Future<void> _changeDisguise(String disguise) async {
     try {
@@ -109,15 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _requestIgnoreBatteryOptimizations() async {
-    try {
-      await platform.invokeMethod('requestIgnoreBatteryOptimizations');
-      await Future.delayed(const Duration(seconds: 2));
-      await _loadBatteryStats();
-    } catch (e) {
-      debugPrint('Failed to request battery optimization ignore: $e');
-    }
-  }
 
   Future<void> _saveCustomDns(String value) async {
     if (value.trim().isEmpty) {
@@ -216,6 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           pinKey: Constants.settingsLockPinKey,
           title: 'Set Settings PIN',
           onSuccess: () {
+            AppSession.isSettingsUnlocked = true;
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Settings PIN set successfully')),
@@ -250,13 +229,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
-  Future<void> _openAccessibilitySettings() async {
-    try {
-      await platform.invokeMethod('openAccessibilitySettings');
-    } on PlatformException catch (e) {
-      debugPrint("Failed to open accessibility settings: '${e.message}'.");
+  Future<void> _navigateToContentSection(String routeName) async {
+    if (_isSettingsPinSet && !AppSession.isSettingsUnlocked) {
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PinLockScreen(
+            pinKey: Constants.settingsLockPinKey,
+            title: 'Verify Settings PIN',
+            onSuccess: () {
+              AppSession.isSettingsUnlocked = true;
+              Navigator.pop(context);
+              Navigator.pushNamed(context, routeName);
+            },
+          ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      Navigator.pushNamed(context, routeName);
     }
   }
+
 
   Future<void> _showThemeDialog() async {
     await showDialog(
@@ -330,69 +325,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _showBatteryAuditDialog() async {
-    await _loadBatteryStats();
-    if (!mounted) return;
-
+  Future<void> _showReliabilityDialog() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Battery performance audit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAuditItem(
-              'Background optimization',
-              _batteryStats?['isIgnoringOptimizations'] == true
-                  ? 'Disabled (Good)'
-                  : 'Enabled (Restricted)',
-              _batteryStats?['isIgnoringOptimizations'] == true
-                  ? Icons.check_circle
-                  : Icons.warning,
-              _batteryStats?['isIgnoringOptimizations'] == true
-                  ? Colors.green
-                  : Colors.orange,
-            ),
-            const SizedBox(height: 12),
-            _buildAuditItem(
-              'VPN Service status',
-              _batteryStats?['vpnActive'] == true ? 'Running' : 'Inactive',
-              Icons.lan_outlined,
-              _batteryStats?['vpnActive'] == true ? Colors.blue : Colors.grey,
-            ),
-            if (_batteryStats?['vpnActive'] == true) ...[
-              const SizedBox(height: 12),
-              _buildAuditItem(
-                'Uptime',
-                '${_batteryStats?['uptimeMinutes']} minutes',
-                Icons.timer_outlined,
-                Colors.blue,
-              ),
-              const SizedBox(height: 12),
-              _buildAuditItem(
-                'Packets analyzed',
-                '${_batteryStats?['packetsProcessed']}',
-                Icons.analytics_outlined,
-                Colors.blue,
-              ),
-            ],
-            const SizedBox(height: 20),
-            const Text(
-              'For the VPN and Website Blocking to work reliably, please disable battery optimization for ClearNet.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
+        title: const Text('Reliability note'),
+        content: const Text(
+          'For the VPN, website, and app blocking to work reliably, battery optimization has to be disabled and the Safe Browsing service has to be enabled while using ClearNet.',
         ),
         actions: [
-          if (_batteryStats?['isIgnoringOptimizations'] != true)
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _requestIgnoreBatteryOptimizations();
-              },
-              child: const Text('Disable optimization'),
-            ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
@@ -402,29 +343,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildAuditItem(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            Text(value, style: const TextStyle(fontSize: 12)),
-          ],
-        ),
-      ],
-    );
-  }
 
   Future<void> _showChangelogDialog() async {
     try {
@@ -700,17 +618,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Permissions',
+              'Reliability',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.accessibility_new, color: Colors.blue),
-            title: const Text('Enable safe browsing service'),
-            subtitle: const Text(
-              'Required for blocking websites while using a VPN',
-            ),
-            onTap: _openAccessibilitySettings,
+            leading: const Icon(Icons.verified_user_outlined, color: Colors.blue),
+            title: const Text('Reliability & performance note'),
+            subtitle: const Text('Important information for app stability'),
+            onTap: _showReliabilityDialog,
           ),
           const Divider(),
           const Padding(
@@ -738,24 +654,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
             leading: const Icon(Icons.theater_comedy_outlined),
             onTap: _showDisguiseDialog,
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Battery & Performance',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.battery_saver_outlined),
-            title: const Text('Battery optimization audit'),
-            subtitle: Text(
-              _batteryStats?['isIgnoringOptimizations'] == true
-                  ? 'Optimized for background performance'
-                  : 'Background activity may be restricted by system',
-            ),
-            onTap: _showBatteryAuditDialog,
           ),
           ListTile(
             title: Text(
@@ -833,15 +731,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             title: const Text('Manage blocked websites'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.blockedSites);
-            },
+            onTap: () => _navigateToContentSection(AppRoutes.blockedSites),
           ),
           ListTile(
             title: const Text('Manage blocked apps'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.blockedApps);
-            },
+            onTap: () => _navigateToContentSection(AppRoutes.blockedApps),
           ),
           const Divider(),
           const Padding(

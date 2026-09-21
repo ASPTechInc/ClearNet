@@ -39,8 +39,8 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     _setupMethodChannel();
     unawaited(_checkInitialAction());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 1), () async{
-        await _checkAccessibilityService();
+      Future.delayed(const Duration(seconds: 1), () async {
+        await _checkRequiredPermissions();
       });
     });
   }
@@ -52,9 +52,9 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async{
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      await _checkAccessibilityService();
+      await _checkRequiredPermissions();
     }
   }
 
@@ -87,17 +87,18 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _checkAccessibilityService() async {
-    final bool isEnabled = await VpnController.isAccessibilityServiceEnabled();
-    if (isEnabled) {
-      if (_isDialogShowing) {
-        navigatorKey.currentState?.pop();
-        _isDialogShowing = false;
-      }
-    } else {
-      if (!_isDialogShowing) {
-        await _showAccessibilityDialog();
-      }
+  Future<void> _checkRequiredPermissions() async {
+    if (_isDialogShowing) return;
+
+    final bool isAccessibilityEnabled = await VpnController.isAccessibilityServiceEnabled();
+    if (!isAccessibilityEnabled) {
+      await _showAccessibilityDialog();
+      return; // Return so the next check happens on next resume or after dialog closes
+    }
+
+    final bool isBatteryOptimized = await VpnController.isIgnoringBatteryOptimizations();
+    if (!isBatteryOptimized) {
+      await _showBatteryOptimizationDialog();
     }
   }
 
@@ -106,7 +107,7 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     if (context == null) return;
 
     _isDialogShowing = true;
-    showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => PopScope(
@@ -128,6 +129,38 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
                 await VpnController.openAccessibilitySettings();
               },
               child: const Text('Enable service'),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) => _isDialogShowing = false);
+  }
+
+  Future<void> _showBatteryOptimizationDialog() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    _isDialogShowing = true;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Battery performance'),
+          content: const Text(
+            'For the VPN and Website Blocking to work reliably, battery optimization has to be disabled for ClearNet.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => SystemNavigator.pop(),
+              child: const Text('Exit app'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await VpnController.requestIgnoreBatteryOptimizations();
+              },
+              child: const Text('Disable optimization'),
             ),
           ],
         ),

@@ -46,4 +46,25 @@ class VpnController {
   static Future<void> openAccessibilitySettings() async {
     await platform.invokeMethod('openAccessibilitySettings');
   }
+
+  /// Check if Ignoring Battery Optimizations
+  static Future<bool> isIgnoringBatteryOptimizations() async {
+    return await platform.invokeMethod('isIgnoringBatteryOptimizations') ?? false;
+  }
+
+  /// Request Ignore Battery Optimizations
+  static Future<void> requestIgnoreBatteryOptimizations() async {
+    await platform.invokeMethod('requestIgnoreBatteryOptimizations');
+  }
+
+  /// Show the native confirmation dialog to disable blocking
+  static Future<bool> showDisableConfirmation() async {
+    return await platform.invokeMethod('showDisableConfirmation') ?? false;
+  }
+
+  /// Get Battery Stats
+  static Future<Map<String, dynamic>> getBatteryStats() async {
+    final stats = await platform.invokeMapMethod<String, dynamic>('getBatteryStats');
+    return stats ?? {};
+  }
 }
