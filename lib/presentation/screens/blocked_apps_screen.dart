@@ -20,6 +20,7 @@ class BlockedAppsScreen extends StatefulWidget {
 
 class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
   static const platform = MethodChannel(Constants.methodChannelName);
+  final _prefs = SharedPreferencesAsync();
   List<Map<String, String>> _allApps = [];
   List<Map<String, String>> _filteredApps = [];
   Set<String> _blockedPackages = {};
@@ -36,8 +37,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
   Future<void> _loadData() async {
     try {
       final List<dynamic> apps = await platform.invokeMethod('getInstalledApps');
-      final prefs = await SharedPreferences.getInstance();
-      final blocked = prefs.getStringList(Constants.blockedAppsKey) ?? [];
+      final blocked = await _prefs.getStringList(Constants.blockedAppsKey) ?? [];
 
       if (!mounted) return;
       setState(() {
@@ -67,7 +67,6 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
   }
 
   Future<void> _toggleApp(String packageName, bool isBlocked) async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
       if (isBlocked) {
         _blockedPackages.add(packageName);
@@ -75,7 +74,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
         _blockedPackages.remove(packageName);
       }
     });
-    await prefs.setStringList(Constants.blockedAppsKey, _blockedPackages.toList());
+    await _prefs.setStringList(Constants.blockedAppsKey, _blockedPackages.toList());
   }
 
   @override

@@ -21,6 +21,8 @@ class BlocklistManager {
   static const _finalDomainsKey = Constants.blocklistKey;
   static const _finalKeywordsKey = Constants.keywordsKey;
 
+  static final _prefs = SharedPreferencesAsync();
+
   static Future<File> _getLocalFile() async {
     final directory = await getApplicationDocumentsDirectory();
     return File('${directory.path}/blocklist.json');
@@ -28,12 +30,11 @@ class BlocklistManager {
 
   /// Ensures SharedPreferences is in sync with blocklist.json if it exists
   static Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
     final file = await _getLocalFile();
     
     // Check if we have any user data in SharedPreferences
-    final hasUserData = (prefs.getStringList(_userDomainsKey) ?? []).isNotEmpty ||
-                        (prefs.getStringList(_userKeywordsKey) ?? []).isNotEmpty;
+    final hasUserData = (await _prefs.getStringList(_userDomainsKey) ?? []).isNotEmpty ||
+                        (await _prefs.getStringList(_userKeywordsKey) ?? []).isNotEmpty;
 
     if (await file.exists()) {
       try {
@@ -49,8 +50,8 @@ class BlocklistManager {
       final keywords = assetData['keywords'] ?? [];
       
       if (domains.isNotEmpty || keywords.isNotEmpty) {
-        await prefs.setStringList(_userDomainsKey, domains);
-        await prefs.setStringList(_userKeywordsKey, keywords);
+        await _prefs.setStringList(_userDomainsKey, domains);
+        await _prefs.setStringList(_userKeywordsKey, keywords);
         await buildFinalBlocklist();
         await _saveToFile();
       }
@@ -76,28 +77,25 @@ class BlocklistManager {
 
   /// Load user-added domains
   static Future<List<String>> loadUserDomains() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_userDomainsKey) ?? [])
+    return (await _prefs.getStringList(_userDomainsKey) ?? [])
         .map((s) => s.toLowerCase())
         .toList();
   }
 
   /// Load user-added keywords
   static Future<List<String>> loadUserKeywords() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_userKeywordsKey) ?? [])
+    return (await _prefs.getStringList(_userKeywordsKey) ?? [])
         .map((s) => s.toLowerCase())
         .toList();
   }
 
   /// Add a new user domain
   static Future<void> addUserDomain(String domain) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userDomainsKey) ?? [];
+    final current = await _prefs.getStringList(_userDomainsKey) ?? [];
     final cleaned = domain.trim().toLowerCase();
     if (cleaned.isNotEmpty && !current.contains(cleaned)) {
       current.add(cleaned);
-      await prefs.setStringList(_userDomainsKey, current);
+      await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist(); // Sync to native
       await _saveToFile();
     }
@@ -105,12 +103,11 @@ class BlocklistManager {
 
   /// Add a new user keyword
   static Future<void> addUserKeyword(String keyword) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userKeywordsKey) ?? [];
+    final current = await _prefs.getStringList(_userKeywordsKey) ?? [];
     final cleaned = keyword.trim().toLowerCase();
     if (cleaned.isNotEmpty && !current.contains(cleaned)) {
       current.add(cleaned);
-      await prefs.setStringList(_userKeywordsKey, current);
+      await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist(); // Sync to native
       await _saveToFile();
     }
@@ -118,10 +115,9 @@ class BlocklistManager {
 
   /// Remove a user domain
   static Future<void> removeUserDomain(String domain) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userDomainsKey) ?? [];
+    final current = await _prefs.getStringList(_userDomainsKey) ?? [];
     if (current.remove(domain.toLowerCase())) {
-      await prefs.setStringList(_userDomainsKey, current);
+      await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist();
       await _saveToFile();
     }
@@ -129,10 +125,9 @@ class BlocklistManager {
 
   /// Remove a user keyword
   static Future<void> removeUserKeyword(String keyword) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userKeywordsKey) ?? [];
+    final current = await _prefs.getStringList(_userKeywordsKey) ?? [];
     if (current.remove(keyword.toLowerCase())) {
-      await prefs.setStringList(_userKeywordsKey, current);
+      await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist();
       await _saveToFile();
     }
@@ -140,8 +135,7 @@ class BlocklistManager {
 
   /// Update an existing user domain
   static Future<void> updateUserDomain(String oldDomain, String newDomain) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userDomainsKey) ?? [];
+    final current = await _prefs.getStringList(_userDomainsKey) ?? [];
     final oldCleaned = oldDomain.toLowerCase();
     final newCleaned = newDomain.trim().toLowerCase();
 
@@ -150,7 +144,7 @@ class BlocklistManager {
     final index = current.indexOf(oldCleaned);
     if (index != -1) {
       current[index] = newCleaned;
-      await prefs.setStringList(_userDomainsKey, current);
+      await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist();
       await _saveToFile();
     }
@@ -158,8 +152,7 @@ class BlocklistManager {
 
   /// Update an existing user keyword
   static Future<void> updateUserKeyword(String oldKeyword, String newKeyword) async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_userKeywordsKey) ?? [];
+    final current = await _prefs.getStringList(_userKeywordsKey) ?? [];
     final oldCleaned = oldKeyword.toLowerCase();
     final newCleaned = newKeyword.trim().toLowerCase();
 
@@ -168,7 +161,7 @@ class BlocklistManager {
     final index = current.indexOf(oldCleaned);
     if (index != -1) {
       current[index] = newCleaned;
-      await prefs.setStringList(_userKeywordsKey, current);
+      await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist();
       await _saveToFile();
     }
@@ -194,18 +187,16 @@ class BlocklistManager {
     final allDomains = <String>{...assetData['domains']!, ...userDomains};
     final allKeywords = <String>{...assetData['keywords']!, ...userKeywords};
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_finalDomainsKey, allDomains.toList());
-    await prefs.setStringList(_finalKeywordsKey, allKeywords.toList());
+    await _prefs.setStringList(_finalDomainsKey, allDomains.toList());
+    await _prefs.setStringList(_finalKeywordsKey, allKeywords.toList());
   }
 
   /// Check domain against merged blocklist + keywords
   static Future<bool> shouldBlock(String domain) async {
     final lowerDomain = domain.toLowerCase();
 
-    final prefs = await SharedPreferences.getInstance();
-    final domains = prefs.getStringList(_finalDomainsKey) ?? [];
-    final keywords = prefs.getStringList(_finalKeywordsKey) ?? [];
+    final domains = await _prefs.getStringList(_finalDomainsKey) ?? [];
+    final keywords = await _prefs.getStringList(_finalKeywordsKey) ?? [];
 
     if (domains.any((s) => lowerDomain.contains(s))) return true;
     if (keywords.any((k) => lowerDomain.contains(k))) return true;
@@ -231,9 +222,8 @@ class BlocklistManager {
       final List<String> domains = List<String>.from(data['domains'] ?? []);
       final List<String> keywords = List<String>.from(data['keywords'] ?? []);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_userDomainsKey, domains.map((s) => s.toLowerCase()).toList());
-      await prefs.setStringList(_userKeywordsKey, keywords.map((s) => s.toLowerCase()).toList());
+      await _prefs.setStringList(_userDomainsKey, domains.map((s) => s.toLowerCase()).toList());
+      await _prefs.setStringList(_userKeywordsKey, keywords.map((s) => s.toLowerCase()).toList());
       
       await buildFinalBlocklist();
       if (syncToFile) {

@@ -22,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _prefs = SharedPreferencesAsync();
   bool _isBlockingEnabled = false;
   int _websitesBlocked = 0;
   int _appsBlocked = 0;
@@ -33,21 +34,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
     final webCount = await StatsManager.getBlockedWebsitesCount();
     final appCount = await StatsManager.getBlockedAppsCount();
+    final isEnabled = await _prefs.getBool('is_blocking_enabled') ?? false;
 
     if (!mounted) return;
     setState(() {
-      _isBlockingEnabled = prefs.getBool('is_blocking_enabled') ?? false;
+      _isBlockingEnabled = isEnabled;
       _websitesBlocked = webCount;
       _appsBlocked = appCount;
     });
   }
 
   Future<void> _toggleBlocking(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_blocking_enabled', value);
+    if (value) {
+      final isEnabled = await VpnController.isAccessibilityServiceEnabled();
+      if (!isEnabled) {
+        if (!mounted) return;
+        _showEnableAccessibilityDialog();
+        return;
+      }
+    }
+
+    await _prefs.setBool('is_blocking_enabled', value);
     
     if (value) {
       await VpnController.startVpn();
@@ -60,9 +69,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _showEnableAccessibilityDialog() {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enable Safe Browsing'),
+        content: const Text(
+          'To enable blocking, you must first enable the Safe Browsing service in your device settings.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await VpnController.openAccessibilitySettings();
+            },
+            child: const Text('Go to Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isLocked = prefs.getBool(Constants.lockSettingsKey) ?? false;
+    final isLocked = await _prefs.getBool(Constants.lockSettingsKey) ?? false;
     
     if (isLocked) {
       if (!mounted) return;
@@ -109,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _isBlockingEnabled ? 'Blocking Active' : 'Blocking Paused',
+                      _isBlockingEnabled ? 'Blocking active' : 'Blocking paused',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -154,17 +187,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: ElevatedButton.icon(
-              onPressed: _openSettings,
-              icon: const Icon(Icons.tune),
-              label: const Text('Configure Protection'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.all(24.0),
+          //   child: ElevatedButton.icon(
+          //     onPressed: _openSettings,
+          //     icon: const Icon(Icons.tune),
+          //     label: const Text('Configure Protection'),
+          //     style: ElevatedButton.styleFrom(
+          //       minimumSize: const Size(double.infinity, 50),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -179,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Today's Activity",
+              "Today's activity",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),

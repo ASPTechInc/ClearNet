@@ -36,4 +36,14 @@ class VpnController {
   static Future<void> removeKeyword(String keyword) async {
     await platform.invokeMethod('removeKeyword', {'keyword': keyword});
   }
+
+  /// Check if Accessibility Service is enabled
+  static Future<bool> isAccessibilityServiceEnabled() async {
+    return await platform.invokeMethod('isAccessibilityServiceEnabled') ?? false;
+  }
+
+  /// Open Accessibility Settings
+  static Future<void> openAccessibilitySettings() async {
+    await platform.invokeMethod('openAccessibilitySettings');
+  }
 }

@@ -36,6 +36,11 @@ void main() {
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
 
+      // Tap Confirm in the dialog
+      expect(find.text('Confirm PIN'), findsOneWidget);
+      await tester.tap(find.text('Confirm'));
+      await tester.pump();
+
       // Verify SnackBar for confirmation
       expect(find.text('Re-enter PIN to confirm'), findsOneWidget);
       expect(successCalled, isFalse);

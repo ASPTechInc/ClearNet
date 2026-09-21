@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Project imports:
-import 'package:clearnet/presentation/screens/biometric_lock_screen.dart';
+import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_apps_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_sites.dart';

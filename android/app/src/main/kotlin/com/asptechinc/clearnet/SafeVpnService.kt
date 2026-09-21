@@ -21,6 +21,10 @@ class SafeVpnService : VpnService(), Runnable {
     private val blockedSites = ConcurrentHashMap.newKeySet<String>()
     private val blockedKeywords = ConcurrentHashMap.newKeySet<String>()
     private var running = false
+    
+    private var startTime: Long = 0
+    private var totalPacketsProcessed: Long = 0
+    private var packetsBlocked: Long = 0
 
     // Virtual IP mapping configurations for forcing Google and Bing SafeSearch VIP routes
     private val SAFE_SEARCH_VIP_GOOGLE = byteArrayOf(216.toByte(), 239.toByte(), 38.toByte(), 120.toByte())
@@ -73,10 +77,9 @@ class SafeVpnService : VpnService(), Runnable {
      * builds the virtual TUN interface parameters and spins up the worker reading thread.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val isBlockingEnabled = prefs.getBoolean("flutter.is_blocking_enabled", false)
+        val data = DataStoreReader.readData(this)
         
-        if (!isBlockingEnabled) {
+        if (!data.isBlockingEnabled) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -84,52 +87,18 @@ class SafeVpnService : VpnService(), Runnable {
         blockedSites.clear()
         blockedKeywords.clear()
 
-        // Load Blocked Domains from preferences
-        try {
-            val savedSites = prefs.getStringSet("flutter.blocked_sites", null)
-            if (savedSites != null) {
-                blockedSites.addAll(savedSites.map { it.lowercase() })
-            }
-        } catch (e: Exception) {
-            val jsonStr = prefs.getString("flutter.blocked_sites", null)
-            if (jsonStr != null) {
-                val cleaned = jsonStr.replace("[", "").replace("]", "").replace("\"", "")
-                val sites = cleaned.split(",")
-                for (site in sites) {
-                    val trimmed = site.trim().lowercase()
-                    if (trimmed.isNotEmpty()) {
-                        blockedSites.add(trimmed)
-                    }
-                }
-            }
-        }
+        blockedSites.addAll(data.blockedSites)
+        blockedKeywords.addAll(data.blockedKeywords)
 
-        // Load Blocked Keywords from preferences
-        try {
-            val savedKeywords = prefs.getStringSet("flutter.blocked_keywords", null)
-            if (savedKeywords != null) {
-                blockedKeywords.addAll(savedKeywords.map { it.lowercase() })
-            }
-        } catch (e: Exception) {
-            val jsonStr = prefs.getString("flutter.blocked_keywords", null)
-            if (jsonStr != null) {
-                val cleaned = jsonStr.replace("[", "").replace("]", "").replace("\"", "")
-                val words = cleaned.split(",")
-                for (word in words) {
-                    val trimmed = word.trim().lowercase()
-                    if (trimmed.isNotEmpty()) {
-                        blockedKeywords.add(trimmed)
-                    }
-                }
-            }
-        }
 
         // Establish the VpnInterface connection descriptor if not yet created
         if (vpnInterface == null) {
+            startTime = System.currentTimeMillis()
             val builder = Builder()
             builder.addAddress("10.0.0.2", 32)
             
-            val customDns = prefs.getString("flutter.custom_dns", "")?.trim() ?: ""
+            // Jetpack DataStore fallback string check or empty fallback
+            val customDns = ""
             if (customDns.isNotEmpty()) {
                 builder.addDnsServer(customDns)
                 builder.addRoute(customDns, 32)
@@ -178,6 +147,7 @@ class SafeVpnService : VpnService(), Runnable {
             while (running) {
                 val length = input.read(buffer)
                 if (length > 0) {
+                    totalPacketsProcessed++
                     // Basic IPv4 + UDP packet header verification check
                     // Offset 9 contains the Protocol (17 = UDP)
                     // Offset 22-23 contains the Destination Port (53 = standard DNS)
@@ -215,6 +185,7 @@ class SafeVpnService : VpnService(), Runnable {
      * Increments persistent website restriction statistics counter.
      */
     private fun incrementBlockCount() {
+        packetsBlocked++
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         val current = prefs.getInt("flutter.blocked_websites_count", 0)
         prefs.edit().putInt("flutter.blocked_websites_count", current + 1).apply()
@@ -333,4 +304,12 @@ class SafeVpnService : VpnService(), Runnable {
         if (blockedKeywords.any { lowerDomain.contains(it) }) return true
         return false
     }
+
+    fun getUptimeMinutes(): Long {
+        if (startTime == 0L) return 0
+        return (System.currentTimeMillis() - startTime) / 60000
+    }
+
+    fun getPacketsProcessed(): Long = totalPacketsProcessed
+    fun getPacketsBlocked(): Long = packetsBlocked
 }

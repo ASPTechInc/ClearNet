@@ -41,6 +41,14 @@ void main() {
 
       // Initialise SharedPreferences with mock initial values
       SharedPreferences.setMockInitialValues({});
+
+      // Mock Path Provider
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async {
+          return '.';
+        },
+      );
     });
 
     tearDown(() {
