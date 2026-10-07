@@ -7,8 +7,9 @@ import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_apps_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_sites.dart';
-import 'package:clearnet/presentation/screens/home_screen.dart';
+import 'package:clearnet/presentation/screens/guide_screen.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/protection_screen.dart';
 import 'package:clearnet/presentation/screens/settings_screen.dart';
 
 class AppRoutes {
@@ -16,50 +17,81 @@ class AppRoutes {
   static const String verifyUninstallPin = '/verify_uninstall_pin';
   static const String setupPin = '/setup_pin';
   static const String settingsPath = '/settings';
-  static const String home = '/home';
+  static const String home = '/protection';
   static const String blocked = '/blocked';
   static const String blockedApps = '/blocked_apps';
   static const String blockedSites = '/blocked_sites';
+  static const String guide = '/guide';
 
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
+  /// Returns the screen widget corresponding to the given route name.
+  /// This provides the reverse mapping of route name to widget screen.
+  static Widget getScreen(String route) {
+    switch (route) {
       case root:
-        return MaterialPageRoute(builder: (_) => const AppLockScreen());
+        return const AppLockScreen();
+
+      case home:
+        return const ProtectionScreen();
+
+      case blocked:
+        return const BlockedAccessScreen();
+
+      case blockedApps:
+        return const BlockedAppsScreen();
+
+      case blockedSites:
+        return const BlockedSitesScreen();
+
+      case settingsPath:
+        return const SettingsScreen();
+
+      case guide:
+        return const GuideScreen();
 
       case verifyUninstallPin:
-        return MaterialPageRoute(
-          builder: (context) => PinLockScreen(
-            onSuccess: () async {
-              SystemNavigator.pop();
-            },
-          ),
+        return PinLockScreen(
+          onSuccess: () async {
+            SystemNavigator.pop();
+          },
         );
 
       case setupPin:
-        return MaterialPageRoute(builder: (_) => const PinLockScreen(confirmMode: true));
+        return const PinLockScreen(confirmMode: true);
 
-      case settingsPath:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+      default:
+        return Scaffold(
+          body: Center(child: Text('No route defined for $route')),
+        );
+    }
+  }
 
-      case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+  /// Alias for [getScreen] for explicit clarity if needed.
+  static Widget getScreenForRoute(String route) => getScreen(route);
 
-      case blocked:
-        return MaterialPageRoute(builder: (_) => const BlockedAccessScreen());
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    final routeName = settings.name ?? root;
+    switch (routeName) {
+      case guide:
+        return PageRouteBuilder(
+          settings: settings,
+          opaque: false,
+          barrierDismissible: true,
+          barrierColor: Colors.black54,
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const GuideScreen(),
+        );
 
-      case blockedApps:
-        return MaterialPageRoute(builder: (_) => const BlockedAppsScreen());
-
-      case blockedSites:
-        return MaterialPageRoute(builder: (_) => const BlockedSitesScreen());
+      case verifyUninstallPin:
+      case setupPin:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => getScreen(routeName),
+        );
 
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
-          ),
+          settings: settings,
+          builder: (_) => getScreen(routeName),
         );
     }
   }

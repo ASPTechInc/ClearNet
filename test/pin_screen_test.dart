@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 // Project imports:
 import 'package:clearnet/presentation/screens/pin_screen.dart';
@@ -14,6 +16,8 @@ void main() {
 
   group('PinLockScreen Widget & Interaction Tests', () {
     setUp(() {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.empty();
       SharedPreferences.setMockInitialValues({});
       FlutterSecureStorage.setMockInitialValues({});
     });
@@ -36,7 +40,7 @@ void main() {
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
 
-      // Tap Confirm in the dialog
+      // Tap Confirm in the dialogue
       expect(find.text('Confirm PIN'), findsOneWidget);
       await tester.tap(find.text('Confirm'));
       await tester.pump();
@@ -53,15 +57,19 @@ void main() {
       expect(successCalled, isTrue);
 
       // Verify storage
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('uninstall_pin'), '1234');
+      final storagePin = await const FlutterSecureStorage().read(
+        key: 'app_pin',
+      );
+      expect(storagePin, '1234');
+      final asyncPin = await SharedPreferencesAsync().getString('app_pin');
+      expect(asyncPin, '1234');
     });
 
     testWidgets('Verification mode fails with incorrect PIN', (
       WidgetTester tester,
     ) async {
       // Pre-seed storage with a PIN
-      FlutterSecureStorage.setMockInitialValues({'uninstall_pin': '9999'});
+      FlutterSecureStorage.setMockInitialValues({'app_pin': '9999'});
 
       bool successCalled = false;
       await tester.pumpWidget(
@@ -84,7 +92,7 @@ void main() {
     testWidgets('Verification mode succeeds with correct PIN', (
       WidgetTester tester,
     ) async {
-      FlutterSecureStorage.setMockInitialValues({'uninstall_pin': '8888'});
+      FlutterSecureStorage.setMockInitialValues({'app_pin': '8888'});
 
       bool successCalled = false;
       await tester.pumpWidget(

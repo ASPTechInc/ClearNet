@@ -12,7 +12,9 @@ class StatsManager {
 
   static Future<Map<String, dynamic>> _getNativeStats() async {
     try {
-      final Map<dynamic, dynamic>? stats = await platform.invokeMethod('getStats');
+      final Map<dynamic, dynamic>? stats = await platform.invokeMethod(
+        'getStats',
+      );
       if (stats != null) {
         return Map<String, dynamic>.from(stats);
       }

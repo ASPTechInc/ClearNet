@@ -13,7 +13,7 @@ class PinLockScreen extends StatefulWidget {
     super.key,
     this.confirmMode = false,
     this.onSuccess,
-    this.pinKey = Constants.uninstallPinKey,
+    this.pinKey = Constants.appPinKey,
     this.title = 'Enter PIN',
   });
   final bool confirmMode;
@@ -72,22 +72,6 @@ class _PinLockScreenState extends State<PinLockScreen> {
           const SnackBar(content: Text('Re-enter PIN to confirm')),
         );
       } else if (_firstEntry == enteredPin) {
-        // Validation: Ensure it doesn't match the other PIN
-        final otherKey = widget.pinKey == Constants.uninstallPinKey 
-            ? Constants.settingsLockPinKey 
-            : Constants.uninstallPinKey;
-        final otherPin = await storage.read(key: otherKey);
-
-        if (otherPin != null && otherPin == enteredPin) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(widget.pinKey == Constants.uninstallPinKey
-                ? 'Uninstall PIN cannot match Settings PIN'
-                : 'Settings PIN cannot match Uninstall PIN')),
-          );
-          return;
-        }
-
         await storage.write(key: widget.pinKey, value: enteredPin);
         await _prefs.setString(widget.pinKey, enteredPin);
         widget.onSuccess?.call();

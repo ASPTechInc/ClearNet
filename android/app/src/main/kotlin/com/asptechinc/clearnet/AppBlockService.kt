@@ -17,6 +17,7 @@ class AppBlockService : AccessibilityService() {
     // Default set of blocked keywords if none are found in preferences
     private var blockedKeywords = mutableSetOf("porn", "sex", "xxx", "adult", "gamble", "casino")
     private var blockedSites = mutableSetOf<String>()
+    private var whitelistedSites = mutableSetOf<String>()
 
     companion object {
         const val TAG = "AppBlockService"
@@ -52,9 +53,10 @@ class AppBlockService : AccessibilityService() {
 
             Log.d(TAG, "Foreground app changed to: $packageName")
             
-            // Sync current lists of blacklisted sites and keywords
+            // Sync current lists of blacklisted sites, keywords, and whitelisted sites
             this.blockedSites = data.blockedSites.toMutableSet()
             this.blockedKeywords = data.blockedKeywords.toMutableSet()
+            this.whitelistedSites = data.whitelistedSites.toMutableSet()
             
             val blockedApps = data.blockedApps
             
@@ -194,9 +196,12 @@ class AppBlockService : AccessibilityService() {
     }
 
     /**
-     * Heuristic match against keywords and domain substrings.
+     * Heuristic match against keywords and domain substrings, respecting whitelist overrides.
      */
     private fun shouldBlockText(text: String): Boolean {
+        // Whitelist check takes precedence
+        if (whitelistedSites.any { text.contains(it) }) return false
+
         // Match against blocked keywords
         if (blockedKeywords.any { text.contains(it) }) return true
         
@@ -213,7 +218,7 @@ class AppBlockService : AccessibilityService() {
     private fun blockAccess(reason: String) {
         Log.i(TAG, "Blocking access. Reason: $reason")
         
-        // Step 1: Force minimize current app context by sending user Home
+        // Step 1: Force minimise current app context by sending user Home
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK

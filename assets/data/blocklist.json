@@ -7,14 +7,15 @@
     "youporn.com"
   ],
   "keywords": [
-    "adult",
-    "gambling",
-    "malware",
-    "phishing",
-    "violence",
+    "gay",
     "porn",
     "sex",
     "xxx",
-    "zoo"
+    "zoo",
+    "lesbian"
+  ],
+  "whitelist": [
+    "example.com",
+    "anotherexample.com"
   ]
 }

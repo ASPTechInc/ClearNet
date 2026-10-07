@@ -13,6 +13,6 @@ ClearNet.
 
 ### 2. Block Screen Indicator Graphic
 *   **File Path**: `assets/images/block-screen.png`
-*   **Source**: Free open-licensed image repository.
+*   **Source**: Free open-licenced image repository.
 *   **Licence**: Creative Commons Zero (CC0) / Freely available for commercial and personal use 
     without mandatory attribution requirements.

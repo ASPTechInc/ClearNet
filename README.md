@@ -45,9 +45,17 @@ It is designed to protect individuals by blocking harmful content, restricting a
 | ✅  | **Uninstall Protection with PIN**    | The app registers as a Device Admin that cannot be removed without entering the parent-set PIN.                                                                                                   |
 | ✅  | **App Restriction**     | Blocks selected apps from being launched on the device.                                                                                                                                            |
 | ✅  | **Website Blocking**  | - Built-in local VPN service filters network traffic. - Preloaded blocklist of harmful adult domains stored completely offline. - Parents can add custom domains to the blocklist. |
+| ✅  | **Keyword Filtering** | Blocks websites and content matching parent-defined custom keywords. |
 | ✅  | **SafeSearch Enforcement** | Automatically redirects Google, Bing, and YouTube queries to their respective SafeSearch IPs for family-safe browsing. |
+| ✅  | **Blocklist Import & Export** | Import and export custom domain and keyword lists as `blocklist.json` for easy backup and restore. |
+| ✅  | **Custom DNS Configuration** | Specify a custom upstream DNS server (e.g., Quad9) for network resolution. |
+| ✅  | **App Disguise Mode** | Disguise ClearNet as a Calculator or Notes app icon/name on the home screen. |
+| ✅  | **Settings PIN Lock** | Secure app settings behind a secondary PIN to prevent unauthorised modifications. |
+| ✅  | **Disable Confirmation Challenge** | Requires solving a security confirmation task when attempting to pause or disable blocking. |
+| ✅  | **Activity Statistics** | Displays real-time daily, weekly, and monthly statistics for blocked websites and blocked apps. |
+| ✅  | **Theme Customisation** | Built-in Light, Dark, and System theme mode options. |
 | ✅  | **Offline & Secure**        | - Ships with a default blocklist stored in local assets. - Works without internet access. - No external servers, no data collection.                                                               |
-| ✅  | **In-App Transparency** | Direct access to the Changelog, GitHub source code, and donation options within the app settings. |
+| ✅  | **App Updates & Transparency** | Built-in release updater, direct access to the Changelog, GitHub source code, and support options within settings. |
 
 ---
 

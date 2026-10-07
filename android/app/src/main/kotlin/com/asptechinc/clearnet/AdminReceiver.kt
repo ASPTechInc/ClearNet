@@ -18,7 +18,7 @@ class AdminReceiver : DeviceAdminReceiver() {
      *
      * @param context The application context.
      * @param intent The incoming disable request intent.
-     * @return A warning message displayed to the user in the system dialog.
+     * @return A warning message displayed to the user in the system dialogue.
      */
     override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
         // Trigger the PIN verification screen before allowing device admin to be deactivated

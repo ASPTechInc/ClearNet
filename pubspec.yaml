@@ -39,7 +39,10 @@ dependencies:
   local_auth: ^3.0.2
   package_info_plus: ^10.2.1
   path_provider: ^2.1.5
+  persistent_bottom_nav_bar_v2: ^6.4.0
   shared_preferences: ^2.5.5
+  shared_preferences_platform_interface: ^2.4.2
+  showcaseview: ^5.1.0
   url_launcher: ^6.3.1
 
 dev_dependencies:
@@ -84,8 +87,11 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/data/blocklist.json
+    - assets/data/guide.json
     - assets/images/
     - CHANGELOG.md
+    - PRIVACY_POLICY.md
+    - LICENSE
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

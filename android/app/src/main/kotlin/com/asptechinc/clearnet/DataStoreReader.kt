@@ -12,7 +12,9 @@ object DataStoreReader {
         val isBlockingEnabled: Boolean = false,
         val blockedSites: Set<String> = emptySet(),
         val blockedKeywords: Set<String> = emptySet(),
-        val blockedApps: Set<String> = emptySet()
+        val whitelistedSites: Set<String> = emptySet(),
+        val blockedApps: Set<String> = emptySet(),
+        val customDns: String = ""
     )
 
     fun readData(context: Context): DataStoreData {
@@ -49,14 +51,43 @@ object DataStoreReader {
             // Extract Lists using the JSON array literal fallback string layout
             val blockedSites = extractList(content, "blocked_sites")
             val blockedKeywords = extractList(content, "blocked_keywords")
+            val whitelistedSites = extractList(content, "whitelisted_sites")
             val blockedApps = extractList(content, "blocked_apps")
+            val customDns = extractString(content, "custom_dns")
 
-            Log.d(TAG, "Successfully parsed Jetpack DataStore: enabled=$isBlockingEnabled, sitesCount=${blockedSites.size}, keywordsCount=${blockedKeywords.size}")
-            return DataStoreData(isBlockingEnabled, blockedSites, blockedKeywords, blockedApps)
+            Log.d(TAG, "Successfully parsed Jetpack DataStore: enabled=$isBlockingEnabled, sitesCount=${blockedSites.size}, keywordsCount=${blockedKeywords.size}, whitelistCount=${whitelistedSites.size}, blockedAppsCount=${blockedApps.size}, customDns=$customDns")
+            return DataStoreData(isBlockingEnabled, blockedSites, blockedKeywords, whitelistedSites, blockedApps, customDns)
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing Jetpack DataStore file", e)
             return DataStoreData()
         }
+    }
+
+    private fun extractString(content: String, key: String): String {
+        val index = content.indexOf(key)
+        if (index == -1) return ""
+
+        val sub = content.substring(index + key.length)
+        val maxWindow = minOf(sub.length, 100)
+        val window = sub.substring(0, maxWindow)
+
+        val sb = StringBuilder()
+        var recording = false
+        for (ch in window) {
+            if (ch.isLetterOrDigit() || ch == '.' || ch == '-' || ch == ':') {
+                recording = true
+                sb.append(ch)
+            } else if (recording) {
+                if (sb.length >= 3) {
+                    break
+                } else {
+                    sb.clear()
+                    recording = false
+                }
+            }
+        }
+        val result = sb.toString().trim()
+        return if (result.length >= 3) result else ""
     }
 
     private fun extractList(content: String, key: String): Set<String> {

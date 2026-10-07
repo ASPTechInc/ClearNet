@@ -33,12 +33,12 @@ class _AppLockScreenState extends State<AppLockScreen> {
 
   Future<void> _checkLockMode() async {
     final appLock = await storage.read(key: Constants.appLockEnabledKey);
-    final pin = await storage.read(key: Constants.uninstallPinKey);
+    final appPin = await storage.read(key: Constants.appPinKey);
 
-    final bool hasPin = pin != null && pin.isNotEmpty;
+    final bool hasAppPin = appPin != null && appPin.isNotEmpty;
     final bool isAppLockEnabled = appLock == 'true';
 
-    if (!hasPin || !isAppLockEnabled) {
+    if (!hasAppPin || !isAppLockEnabled) {
       _goToApp();
       return;
     }
@@ -60,7 +60,11 @@ class _AppLockScreenState extends State<AppLockScreen> {
     }
 
     if (_appLockEnabled) {
-      return PinLockScreen(onSuccess: _goToApp);
+      return PinLockScreen(
+        pinKey: Constants.appPinKey,
+        title: 'Enter App PIN',
+        onSuccess: _goToApp,
+      );
     }
 
     return const Scaffold(body: Center(child: CircularProgressIndicator()));

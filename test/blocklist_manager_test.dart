@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 // Package imports:
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 // Project imports:
 import 'package:clearnet/data/services/blocklist_manager.dart';
@@ -14,14 +16,18 @@ import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferencesAsyncPlatform.instance =
+      InMemorySharedPreferencesAsync.empty();
 
   group('BlocklistManager Unit Tests', () {
     late Map<String, List<String>> fakeAssetJson;
 
-    setUp(() {
+    setUp(() async {
+      await SharedPreferencesAsync().clear();
       fakeAssetJson = {
         'domains': ['adultcontent.com', 'gamblingsite.net'],
         'keywords': ['casino', 'betting', 'xxx'],
+        'whitelist': ['safe-casino.com'],
       };
 
       // Mock rootBundle for Constants.blocklistAsset
@@ -29,7 +35,6 @@ void main() {
           .setMockMessageHandler('flutter/assets', (ByteData? message) async {
             if (message == null) return null;
             final String key = utf8.decode(message.buffer.asUint8List());
-            // The key might have a leading slash or be relative
             if (key.contains('blocklist.json')) {
               final encoded = json.encode(fakeAssetJson);
               return ByteData.view(
@@ -39,16 +44,15 @@ void main() {
             return null;
           });
 
-      // Initialise SharedPreferences with mock initial values
       SharedPreferences.setMockInitialValues({});
 
-      // Mock Path Provider
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel('plugins.flutter.io/path_provider'),
-        (MethodCall methodCall) async {
-          return '.';
-        },
-      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            (MethodCall methodCall) async {
+              return '.';
+            },
+          );
     });
 
     tearDown(() {
@@ -61,13 +65,16 @@ void main() {
       expect(userSites, isEmpty);
     });
 
-    test('addUserDomain clean and adds site successfully in lowercase', () async {
-      await BlocklistManager.addUserDomain('  MyBlockedSite.Com ');
-      final userSites = await BlocklistManager.loadUserDomains();
+    test(
+      'addUserDomain clean and adds site successfully in lowercase',
+      () async {
+        await BlocklistManager.addUserDomain('  MyBlockedSite.Com ');
+        final userSites = await BlocklistManager.loadUserDomains();
 
-      expect(userSites, hasLength(1));
-      expect(userSites.first, 'myblockedsite.com');
-    });
+        expect(userSites, hasLength(1));
+        expect(userSites.first, 'myblockedsite.com');
+      },
+    );
 
     test('addUserDomain rejects duplicate additions', () async {
       await BlocklistManager.addUserDomain('gamblingsite.net');
@@ -77,16 +84,28 @@ void main() {
       expect(userSites, hasLength(1));
     });
 
+    test('addUserWhitelist cleans and adds site successfully', () async {
+      await BlocklistManager.addUserWhitelist('  MyAllowedSite.Com ');
+      final userWhitelist = await BlocklistManager.loadUserWhitelist();
+
+      expect(userWhitelist, hasLength(1));
+      expect(userWhitelist.first, 'myallowedsite.com');
+    });
+
     test(
       'buildFinalBlocklist correctly merges baseline assets and user-configured sites',
       () async {
         await BlocklistManager.addUserDomain('customblocked.org');
+        await BlocklistManager.addUserWhitelist('myallowedsite.com');
         await BlocklistManager.buildFinalBlocklist();
 
-        // Check SharedPreferences synchronization
-        final prefs = await SharedPreferences.getInstance();
-        final syncedDomains = prefs.getStringList(Constants.blocklistKey) ?? [];
-        final syncedKeywords = prefs.getStringList(Constants.keywordsKey) ?? [];
+        final prefs = SharedPreferencesAsync();
+        final syncedDomains =
+            await prefs.getStringList(Constants.blocklistKey) ?? [];
+        final syncedKeywords =
+            await prefs.getStringList(Constants.keywordsKey) ?? [];
+        final syncedWhitelist =
+            await prefs.getStringList(Constants.whitelistKey) ?? [];
 
         expect(syncedDomains, hasLength(3));
         expect(
@@ -98,6 +117,10 @@ void main() {
           ]),
         );
         expect(syncedKeywords, containsAll(['casino', 'betting', 'xxx']));
+        expect(
+          syncedWhitelist,
+          containsAll(['safe-casino.com', 'myallowedsite.com']),
+        );
       },
     );
 
@@ -131,5 +154,20 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'shouldBlock respects whitelist override over blocked keywords and domains',
+      () async {
+        await BlocklistManager.addUserWhitelist('custom-casino-news.com');
+        await BlocklistManager.buildFinalBlocklist();
+
+        // "casino" is a blocked keyword, but "safe-casino.com" (from asset) & "custom-casino-news.com" are whitelisted
+        expect(await BlocklistManager.shouldBlock('safe-casino.com'), isFalse);
+        expect(
+          await BlocklistManager.shouldBlock('custom-casino-news.com'),
+          isFalse,
+        );
+      },
+    );
   });
 }

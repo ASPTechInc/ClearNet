@@ -7,10 +7,13 @@ import 'package:flutter/services.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
+import 'package:clearnet/presentation/navigation/bottom_nav_bar.dart';
 import 'package:clearnet/presentation/theme/app_theme.dart';
+import 'package:clearnet/presentation/widgets/permission_requirement_dialogue.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() async {
@@ -38,6 +41,7 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _setupMethodChannel();
     unawaited(_checkInitialAction());
+    AppTourManager.initialiseAppTour();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 1), () async {
         await _checkRequiredPermissions();
@@ -90,82 +94,82 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
   Future<void> _checkRequiredPermissions() async {
     if (_isDialogShowing) return;
 
-    final bool isAccessibilityEnabled = await VpnController.isAccessibilityServiceEnabled();
+    final bool isAccessibilityEnabled =
+        await VpnController.isAccessibilityServiceEnabled();
     if (!isAccessibilityEnabled) {
-      await _showAccessibilityDialog();
-      return; // Return so the next check happens on next resume or after dialog closes
+      final bool granted = await _showAccessibilityDialog();
+      if (!granted) return;
     }
 
-    final bool isBatteryOptimized = await VpnController.isIgnoringBatteryOptimizations();
-    if (!isBatteryOptimized) {
-      await _showBatteryOptimizationDialog();
+    final bool isBatteryOptimised =
+        await VpnController.isIgnoringBatteryOptimizations();
+    if (!isBatteryOptimised) {
+      final bool granted = await _showBatteryOptimisationDialog();
+      if (!granted) return;
     }
+
+    AppTourManager.notifyPermissionsUpdated();
   }
 
-  Future<void> _showAccessibilityDialog() async {
+  Future<bool> _showAccessibilityDialog() async {
     final context = navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null) return false;
 
     _isDialogShowing = true;
-    await showDialog(
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('Action required'),
-          content: const Text(
+      builder: (context) => PermissionRequirementDialogue(
+        title: 'Action required',
+        description:
             'ClearNet requires the Safe Browsing Service to be enabled to ensure your safety while browsing. '
-            'Please enable it in the Accessibility settings to continue using the app. '
-            'Search for "ClearNet" in "Installed apps" section.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => SystemNavigator.pop(),
-              child: const Text('Exit app'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await VpnController.openAccessibilitySettings();
-              },
-              child: const Text('Enable service'),
-            ),
-          ],
-        ),
+            'Please enable it in the Accessibility settings to continue using the app.',
+        initialButtonText: 'Enable service',
+        clickedButtonText: 'Confirm enabling',
+        exitButtonText: 'Exit app',
+        onActionPressed: () async {
+          await VpnController.openAccessibilitySettings();
+        },
+        onCheckPermission: () async {
+          return VpnController.isAccessibilityServiceEnabled();
+        },
+        onExitPressed: () => SystemNavigator.pop(),
+        notEnabledMessage:
+            'Safe Browsing Service is not enabled yet. Please locate "ClearNet" under "Installed apps" in Accessibility settings and turn it on.',
       ),
-    ).then((_) => _isDialogShowing = false);
+    );
+    _isDialogShowing = false;
+    return result ?? false;
   }
 
-  Future<void> _showBatteryOptimizationDialog() async {
+  Future<bool> _showBatteryOptimisationDialog() async {
     final context = navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null) return false;
 
     _isDialogShowing = true;
-    await showDialog(
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('Battery performance'),
-          content: const Text(
-            'For the VPN and Website Blocking to work reliably, battery optimization has to be disabled for ClearNet.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => SystemNavigator.pop(),
-              child: const Text('Exit app'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await VpnController.requestIgnoreBatteryOptimizations();
-              },
-              child: const Text('Disable optimization'),
-            ),
-          ],
-        ),
+      builder: (context) => PermissionRequirementDialogue(
+        title: 'Battery performance',
+        description:
+            'For the VPN and Website Blocking to work reliably, battery optimisation has to be disabled for ClearNet.',
+        initialButtonText: 'Disable optimisation',
+        clickedButtonText: 'Confirm disabling',
+        exitButtonText: 'Exit app',
+        onActionPressed: () async {
+          await VpnController.requestIgnoreBatteryOptimisations();
+        },
+        onCheckPermission: () async {
+          return VpnController.isIgnoringBatteryOptimizations();
+        },
+        onExitPressed: () => SystemNavigator.pop(),
+        notEnabledMessage:
+            'Battery optimisation is still active for ClearNet. Please allow ignoring battery optimisation.',
       ),
-    ).then((_) => _isDialogShowing = false);
+    );
+    _isDialogShowing = false;
+    return result ?? false;
   }
 
   @override
@@ -180,7 +184,8 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: mode,
-          initialRoute: AppRoutes.root,
+          home: const BottomNavBar(),
+          // initialRoute: AppRoutes.root,
           onGenerateRoute: AppRoutes.generateRoute,
         );
       },
