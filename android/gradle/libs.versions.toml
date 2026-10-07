@@ -3,7 +3,7 @@ annotationJvm = "1.11.0"
 gradle = "9.4.0"
 kotlinGradlePlugin = "2.4.20"
 kotlinxSerializationJson = "1.11.0"
-mockitoCore = "5.23.0"
+mockitoCore = "5.24.0"
 mockk = "1.14.11"
 compileSdk = "37"
 
