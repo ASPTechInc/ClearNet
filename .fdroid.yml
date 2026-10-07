@@ -1,0 +1,41 @@
+Categories:
+  - Internet
+  - Security
+License: MIT
+AuthorName: ASPTechnologies Incorporation
+SourceCode: https://github.com/asptechinc/clearnet
+IssueTracker: https://github.com/asptechinc/clearnet/issues
+Changelog: https://github.com/asptechinc/clearnet/blob/main/CHANGELOG.md
+
+AutoName: ClearNet
+Summary: Simple, fast, and secure web browser with built-in ad blocker
+Description: |-
+  ClearNet is a simple, fast, and secure web browser with built-in ad blocker
+  and privacy features.
+
+  Features:
+  * Built-in ad blocker and tracker protection
+  * Fast and lightweight browsing experience
+  * Secure storage and local authentication support
+  * Privacy-focused with zero user tracking
+
+RepoType: git
+Repo: https://github.com/asptechinc/clearnet.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk
+    flutter: 3.29.0
+    init:
+      - flutter pub get
+    build:
+      - flutter build apk --release --build-name=1.0.0 --build-number=1
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

@@ -38,7 +38,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startVpn" -> {
-                    // Check if system VPN permissions are granted; if not, triggers the system permission dialog
+                    // Check if system VPN permissions are granted; if not, triggers the system permission dialogue
                     val intent = VpnService.prepare(this)
                     if (intent != null) {
                         startActivity(intent)
@@ -77,6 +77,20 @@ class MainActivity : FlutterActivity() {
                     val keyword = call.argument<String>("keyword")
                     if (keyword != null) {
                         SafeVpnService.instance?.removeBlockedKeyword(keyword)
+                    }
+                    result.success(true)
+                }
+                  "addWhitelist" -> {
+                    val whitelist = call.argument<String>("whitelist")
+                    if (whitelist != null) {
+                        SafeVpnService.instance?.addWhitelistedSite(whitelist)
+                    }
+                    result.success(true)
+                }
+                "removeWhitelist" -> {
+                    val whitelist = call.argument<String>("whitelist")
+                    if (whitelist != null) {
+                        SafeVpnService.instance?.removeWhitelistedSite(whitelist)
                     }
                     result.success(true)
                 }

@@ -11,6 +11,8 @@
 - [SDK locations](#sdk-locations)
 - [Flutter plugin error notes](#flutter-plugin-error-notes)
 
+- [F-Droid release notes](#f-droid-release-notes)
+
 ---
 
 ## Overview
@@ -24,7 +26,7 @@ It complements what is documented in the [README](/README.md).
 
 ## Useful commands for developers
 
-### Code Quality & Maintenance
+### Code quality & Maintenance
 - **Format everything**: `dart format .`
 - **Check for static analysis issues**: `flutter analyze`
 - **Run all unit/widget tests**: `flutter test`
@@ -32,7 +34,7 @@ It complements what is documented in the [README](/README.md).
 - **Fetch dependencies**: `flutter pub get`
 - **Check environment health**: `flutter doctor`
 
-### Build Commands
+### Build commands
 - **Build Debug APK**: `flutter build apk --debug`
 - **Build Release APK**: `flutter build apk --release`
 - **Build Release App Bundle (AAB)**: `flutter build appbundle --release`
@@ -283,7 +285,7 @@ To solve it, ensure that the `androidExtension` is properly passed to the `Flutt
 
 Change 
 
-```kotlin
+```bash
 configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 ```
 to
@@ -293,5 +295,44 @@ configureAbiWithoutSplits(projectToAddTasksTo, androidExtension)
 ```
 
 Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK folder might notice this local modification. If it complains about a conflict, you can safely reset or discard changes in that directory before upgrading (git checkout -- packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt), since the upstream Flutter developers will have officially fixed the typo in the newer version anyway.
+
+---
+
+## F-Droid release notes
+
+1. Create a [`.fdroid.yml`](.fdroid.yml) file in the root of your project and 
+   [`metadata/com.   asptechinc.clearnet.yml`](metadata/com.asptechinc.clearnet.yml)
+
+2. **Tag the release on Git:**
+   Ensure that the release is tagged in the main GitHub repository:
+   ```bash
+   git tag -a v1.0.0 -m "Release 1.0.0"
+   git push origin v1.0.0
+   ```
+
+3. **Fork `fdroiddata` on GitLab:**
+   - Go to [gitlab.com/fdroid/fdroiddata](https://gitlab.com/fdroid/fdroiddata) and click **Fork**.
+
+4. **Add the recipe created in step 1:**
+   - Clone the fork and add the file to `metadata/com.asptechinc.clearnet.yml`:
+
+     ```bash
+     git clone https://gitlab.com/<your-username>/fdroiddata.git
+     cd fdroiddata
+     cp /path/to/ClearNet/metadata/com.asptechinc.clearnet.yml metadata/
+     git add metadata/com.asptechinc.clearnet.yml
+     git commit -m "com.asptechinc.clearnet: new app"
+     git push origin main
+     ```
+
+5. **(Optional) Local Linting with `fdroidserver`:**
+   If you have `fdroidserver` or Docker installed:
+   ```bash
+   fdroid lint com.asptechinc.clearnet
+   ```
+
+6. **Open a merge request:**
+   - Navigate to the fork on GitLab and click **Create Merge Request**.
+   - Select `RFP` (Request for Packaging) or standard new app template. The F-Droid maintainers and automated CI bots will test building the application and reply directly to the merge request.
 
 ---

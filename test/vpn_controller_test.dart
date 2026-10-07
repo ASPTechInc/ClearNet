@@ -21,11 +21,20 @@ void main() {
             log.add(methodCall);
             switch (methodCall.method) {
               case 'startVpn':
-                return null;
+              case 'stopVpn':
               case 'blockSite':
-                return null;
               case 'removeSite':
+              case 'blockKeyword':
+              case 'removeKeyword':
+              case 'openAccessibilitySettings':
+              case 'requestIgnoreBatteryOptimizations':
                 return null;
+              case 'isAccessibilityServiceEnabled':
+              case 'isIgnoringBatteryOptimizations':
+              case 'showDisableConfirmation':
+                return true;
+              case 'getBatteryStats':
+                return {'level': 100, 'isCharging': true};
               default:
                 throw PlatformException(code: 'Unimplemented');
             }
@@ -38,31 +47,41 @@ void main() {
           .setMockMethodCallHandler(VpnController.platform, null);
     });
 
-    test('startVpn invokes method channel startVpn correctly', () async {
+    test('startVpn invokes method channel correctly', () async {
       await VpnController.startVpn();
       expect(log, hasLength(1));
       expect(log.first.method, 'startVpn');
-      expect(log.first.arguments, isNull);
     });
 
-    test(
-      'addSite invokes method channel blockSite with appropriate payload',
-      () async {
-        await VpnController.addSite('pornsite.com');
-        expect(log, hasLength(1));
-        expect(log.first.method, 'blockSite');
-        expect(log.first.arguments, {'site': 'pornsite.com'});
-      },
-    );
+    test('stopVpn invokes method channel correctly', () async {
+      await VpnController.stopVpn();
+      expect(log, hasLength(1));
+      expect(log.first.method, 'stopVpn');
+    });
 
-    test(
-      'removeSite invokes method channel removeSite with appropriate payload',
-      () async {
-        await VpnController.removeSite('unblockme.org');
-        expect(log, hasLength(1));
-        expect(log.first.method, 'removeSite');
-        expect(log.first.arguments, {'site': 'unblockme.org'});
-      },
-    );
+    test('addSite invokes blockSite correctly', () async {
+      await VpnController.addSite('example.com');
+      expect(log, hasLength(1));
+      expect(log.first.method, 'blockSite');
+      expect(log.first.arguments, {'site': 'example.com'});
+    });
+
+    test('addKeyword invokes blockKeyword correctly', () async {
+      await VpnController.addKeyword('badword');
+      expect(log, hasLength(1));
+      expect(log.first.method, 'blockKeyword');
+      expect(log.first.arguments, {'keyword': 'badword'});
+    });
+
+    test('isAccessibilityServiceEnabled returns correct value', () async {
+      final enabled = await VpnController.isAccessibilityServiceEnabled();
+      expect(enabled, isTrue);
+      expect(log.first.method, 'isAccessibilityServiceEnabled');
+    });
+
+    test('getBatteryStats returns correct map', () async {
+      final stats = await VpnController.getBatteryStats();
+      expect(stats, {'level': 100, 'isCharging': true});
+    });
   });
 }

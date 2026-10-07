@@ -1,6 +1,8 @@
+// Flutter imports:
+import 'package:flutter/services.dart';
+
 // Package imports:
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Project imports:
 import 'package:clearnet/data/services/stats_manager.dart';
@@ -11,56 +13,75 @@ void main() {
 
   group('StatsManager Unit Tests', () {
     setUp(() {
-      SharedPreferences.setMockInitialValues({});
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(StatsManager.platform, (
+            MethodCall methodCall,
+          ) async {
+            if (methodCall.method == 'getStats') {
+              return {
+                Constants.blockedWebsitesCountKey: 15,
+                Constants.blockedAppsCountKey: 8,
+                Constants.weeklyWebsitesCountKey: 42,
+                Constants.weeklyAppsCountKey: 20,
+                Constants.monthlyWebsitesCountKey: 150,
+                Constants.monthlyAppsCountKey: 75,
+              };
+            }
+            return null;
+          });
     });
 
-    test('checkAndResetDailyStats resets stats when date changes', () async {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Set stats and a past date
-      await prefs.setInt(Constants.blockedWebsitesCountKey, 10);
-      await prefs.setInt(Constants.blockedAppsCountKey, 5);
-      await prefs.setString(Constants.lastStatsDateKey, '2020-01-01');
-
-      await StatsManager.checkAndResetDailyStats();
-
-      expect(prefs.getInt(Constants.blockedWebsitesCountKey), 0);
-      expect(prefs.getInt(Constants.blockedAppsCountKey), 0);
-      expect(prefs.getString(Constants.lastStatsDateKey), 
-             DateTime.now().toIso8601String().split('T')[0]);
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(StatsManager.platform, null);
     });
 
-    test('checkAndResetDailyStats does not reset stats when date is the same', () async {
-      final prefs = await SharedPreferences.getInstance();
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      
-      await prefs.setInt(Constants.blockedWebsitesCountKey, 10);
-      await prefs.setInt(Constants.blockedAppsCountKey, 5);
-      await prefs.setString(Constants.lastStatsDateKey, today);
+    test(
+      'getBlockedWebsitesCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getBlockedWebsitesCount();
+        expect(count, 15);
+      },
+    );
 
-      await StatsManager.checkAndResetDailyStats();
+    test(
+      'getBlockedAppsCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getBlockedAppsCount();
+        expect(count, 8);
+      },
+    );
 
-      expect(prefs.getInt(Constants.blockedWebsitesCountKey), 10);
-      expect(prefs.getInt(Constants.blockedAppsCountKey), 5);
-      expect(prefs.getString(Constants.lastStatsDateKey), today);
-    });
+    test(
+      'getWeeklyWebsitesCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getWeeklyWebsitesCount();
+        expect(count, 42);
+      },
+    );
 
-    test('getBlockedWebsitesCount returns correct count and triggers reset', () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(Constants.blockedWebsitesCountKey, 15);
-      await prefs.setString(Constants.lastStatsDateKey, DateTime.now().toIso8601String().split('T')[0]);
+    test(
+      'getWeeklyAppsCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getWeeklyAppsCount();
+        expect(count, 20);
+      },
+    );
 
-      final count = await StatsManager.getBlockedWebsitesCount();
-      expect(count, 15);
-    });
+    test(
+      'getMonthlyWebsitesCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getMonthlyWebsitesCount();
+        expect(count, 150);
+      },
+    );
 
-    test('getBlockedAppsCount returns correct count and triggers reset', () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(Constants.blockedAppsCountKey, 8);
-      await prefs.setString(Constants.lastStatsDateKey, DateTime.now().toIso8601String().split('T')[0]);
-
-      final count = await StatsManager.getBlockedAppsCount();
-      expect(count, 8);
-    });
+    test(
+      'getMonthlyAppsCount returns correct count from native stats',
+      () async {
+        final count = await StatsManager.getMonthlyAppsCount();
+        expect(count, 75);
+      },
+    );
   });
 }

@@ -6,7 +6,7 @@ project(clearnet LANGUAGES CXX)
 # the on-disk name of your application.
 set(BINARY_NAME "clearnet")
 
-# Explicitly opt in to modern CMake behaviors to avoid warnings with recent
+# Explicitly opt in to modern CMake behaviours to avoid warnings with recent
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
 

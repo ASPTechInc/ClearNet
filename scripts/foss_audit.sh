@@ -37,7 +37,7 @@ if [ -d "android" ]; then
     ./gradlew app:dependencies --configuration releaseRuntimeClasspath > dependencies_dump.txt
 
     # Check for proprietary package markers commonly found in non-FOSS dependencies
-    # E.g. proprietary authorization kits, vendor billing SDKs, analytics suites
+    # E.g. proprietary authorisation kits, vendor billing SDKs, analytics suites
     PROPRIETARY_MATCHES=$(grep -Ei 'com.google.android.gms:play-services-auth|com.android.billingclient|com.google.firebase:firebase-analytics' dependencies_dump.txt || true)
 
     if [ -n "$PROPRIETARY_MATCHES" ]; then

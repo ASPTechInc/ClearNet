@@ -1,12 +1,3 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-// Flutter imports:
-
 // Flutter imports:
 import 'package:flutter/services.dart';
 
@@ -15,6 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 // Project imports:
 import 'package:clearnet/main.dart';
@@ -22,8 +15,11 @@ import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final inMemoryStore = InMemorySharedPreferencesAsync.empty();
+  SharedPreferencesAsyncPlatform.instance = inMemoryStore;
 
-  setUp(() {
+  setUp(() async {
+    await SharedPreferencesAsync().clear();
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     PackageInfo.setMockInitialValues(
@@ -49,7 +45,10 @@ void main() {
           const MethodChannel(Constants.methodChannelName),
           (MethodCall methodCall) async {
             if (methodCall.method == 'isAccessibilityServiceEnabled') {
-              return true; // Prevent Accessibility Dialog from showing
+              return true; // Prevent Accessibility Dialogue from showing
+            }
+            if (methodCall.method == 'isIgnoringBatteryOptimizations') {
+              return true; // Prevent Battery Optimisation Dialogue from showing
             }
             if (methodCall.method == 'checkInitialAction') {
               return null;
@@ -63,11 +62,11 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ClearNetApp());
 
-    // Allow initializations to complete
+    // Allow initialisations to complete
     await tester.pump();
     await tester.pumpAndSettle();
 
-    // Verify that the app starts. It should land on HomeScreen which has
+    // Verify that the app starts. It should land on ProtectionScreen which has
     // the app name in the AppBar.
     expect(find.text('ClearNet'), findsOneWidget);
 

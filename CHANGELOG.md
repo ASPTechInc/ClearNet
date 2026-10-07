@@ -25,3 +25,12 @@ Full stable release of ClearNet, a free and open-source (FOSS) parental control 
   section.
 - **Improved DNS Logic**: Refactored internal VPN packet handling for better accuracy and 
   performance.
+- **Keyword Filtering**: Custom keyword-based content filtering to block specific words or domains.
+- **Blocklist Import & Export**: Import and export user custom blocklists as JSON files for backup and sync.
+- **App Disguise Mode**: Disguise app launcher appearance as a Calculator or Notes app.
+- **Settings Security**: Dedicated Settings PIN protection to secure app settings from tampering.
+- **Disable Confirmation Challenge**: Interactive confirmation prompt required when attempting to disable blocking.
+- **Activity Tracker**: Real-time daily, weekly, and monthly activity statistics for blocked websites and restricted apps.
+- **Custom Upstream DNS**: Support for configuring custom upstream DNS servers (e.g. Quad9).
+- **Theme Modes**: Support for Dark, Light, and System theme modes.
+- **App Updater**: Integrated GitHub release updater to check for app updates directly within settings.

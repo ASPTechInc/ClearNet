@@ -37,9 +37,20 @@ class VpnController {
     await platform.invokeMethod('removeKeyword', {'keyword': keyword});
   }
 
+  /// Add a site to the whitelist
+  static Future<void> addWhitelist(String whitelist) async {
+    await platform.invokeMethod('addWhitelist', {'whitelist': whitelist});
+  }
+
+  /// Remove a site from the whitelist
+  static Future<void> removeWhitelist(String whitelist) async {
+    await platform.invokeMethod('removeWhitelist', {'whitelist': whitelist});
+  }
+
   /// Check if Accessibility Service is enabled
   static Future<bool> isAccessibilityServiceEnabled() async {
-    return await platform.invokeMethod('isAccessibilityServiceEnabled') ?? false;
+    return await platform.invokeMethod('isAccessibilityServiceEnabled') ??
+        false;
   }
 
   /// Open Accessibility Settings
@@ -47,24 +58,27 @@ class VpnController {
     await platform.invokeMethod('openAccessibilitySettings');
   }
 
-  /// Check if Ignoring Battery Optimizations
+  /// Check if Ignoring Battery Optimisations
   static Future<bool> isIgnoringBatteryOptimizations() async {
-    return await platform.invokeMethod('isIgnoringBatteryOptimizations') ?? false;
+    return await platform.invokeMethod('isIgnoringBatteryOptimizations') ??
+        false;
   }
 
-  /// Request Ignore Battery Optimizations
-  static Future<void> requestIgnoreBatteryOptimizations() async {
-    await platform.invokeMethod('requestIgnoreBatteryOptimizations');
+  /// Request Ignore Battery Optimisations
+  static Future<void> requestIgnoreBatteryOptimisations() async {
+    await platform.invokeMethod('requestIgnoreBatteryOptimisations');
   }
 
-  /// Show the native confirmation dialog to disable blocking
+  /// Show the native confirmation dialogue to disable blocking
   static Future<bool> showDisableConfirmation() async {
     return await platform.invokeMethod('showDisableConfirmation') ?? false;
   }
 
   /// Get Battery Stats
   static Future<Map<String, dynamic>> getBatteryStats() async {
-    final stats = await platform.invokeMapMethod<String, dynamic>('getBatteryStats');
+    final stats = await platform.invokeMapMethod<String, dynamic>(
+      'getBatteryStats',
+    );
     return stats ?? {};
   }
 }

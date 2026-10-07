@@ -2,6 +2,7 @@ class Constants {
   static const String appName = 'ClearNet';
   static const String blocklistKey = 'blocked_sites';
   static const String keywordsKey = 'blocked_keywords';
+  static const String whitelistKey = 'whitelisted_sites';
   static const String vpnStatusKey = 'vpn_status';
   static const String methodChannelName = 'app_control/channel';
   static const String blocklistAsset = 'assets/data/blocklist.json';
@@ -9,7 +10,7 @@ class Constants {
   static const String blockedAppsKey = 'blocked_apps';
   static const String blockedWebsitesCountKey = 'blocked_websites_count';
   static const String blockedAppsCountKey = 'blocked_apps_count';
-  
+
   static const String weeklyWebsitesCountKey = 'weekly_websites_count';
   static const String weeklyAppsCountKey = 'weekly_apps_count';
   static const String monthlyWebsitesCountKey = 'monthly_websites_count';
@@ -20,15 +21,19 @@ class Constants {
   static const String lastMonthlyResetKey = 'last_monthly_reset';
   static const String lockSettingsKey = 'lock_settings';
   static const String appLockEnabledKey = 'app_lock_enabled';
+  static const String appPinKey = 'app_pin';
   static const String uninstallPinKey = 'uninstall_pin';
-  static const String settingsLockPinKey = 'settings_lock_pin';
   static const String appDisguiseKey = 'app_disguise';
-  
+
   static const String githubRepoUrl = 'https://github.com/asptechinc/clearnet';
-  static const String privacyPolicyUrl = 'https://github.com/asptechinc/clearnet/blob/main/PRIVACY_POLICY.md';
-  static const String licenseUrl = 'https://github.com/asptechinc/clearnet/blob/main/LICENSE';
-  static const String releasesUrl = 'https://github.com/asptechinc/clearnet/releases/latest';
-  static const String releasesApiUrl = 'https://api.github.com/repos/asptechinc/clearnet/releases/latest';
+  static const String privacyPolicyUrl =
+      'https://github.com/asptechinc/clearnet/blob/main/PRIVACY_POLICY.md';
+  static const String licenseUrl =
+      'https://github.com/asptechinc/clearnet/blob/main/LICENSE';
+  static const String releasesUrl =
+      'https://github.com/asptechinc/clearnet/releases/latest';
+  static const String releasesApiUrl =
+      'https://api.github.com/repos/asptechinc/clearnet/releases/latest';
 
   static const String buyMeACoffeeUrl = 'https://buymeacoffee.com/asptechinc';
 }

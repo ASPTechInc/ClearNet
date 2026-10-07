@@ -20,6 +20,7 @@ class SafeVpnService : VpnService(), Runnable {
     private var vpnInterface: ParcelFileDescriptor? = null
     private val blockedSites = ConcurrentHashMap.newKeySet<String>()
     private val blockedKeywords = ConcurrentHashMap.newKeySet<String>()
+    private val whitelistedSites = ConcurrentHashMap.newKeySet<String>()
     private var running = false
     
     private var startTime: Long = 0
@@ -72,6 +73,22 @@ class SafeVpnService : VpnService(), Runnable {
         Log.i(TAG, "Removed blocked keyword: $keyword")
     }
 
+    /** 
+     * Dynamically appends a new whitelist string pattern to the local filter. 
+     */
+    fun addWhitelistedSite(whitelist: String) {
+        whitelistedSites.add(whitelist.lowercase())
+        Log.i(TAG, "Added whitelisted site: $whitelist")
+    }
+
+    /** 
+     * Dynamically removes a whitelisted site string pattern from the local filter. 
+     */
+    fun removeWhitelistedSite(whitelist: String) {
+        whitelistedSites.remove(whitelist.lowercase())
+        Log.i(TAG, "Removed whitelisted site: $whitelist")
+    }
+
     /**
      * Initialises service parameters, reads preference data clusters, configurations,
      * builds the virtual TUN interface parameters and spins up the worker reading thread.
@@ -86,9 +103,11 @@ class SafeVpnService : VpnService(), Runnable {
 
         blockedSites.clear()
         blockedKeywords.clear()
+        whitelistedSites.clear()
 
         blockedSites.addAll(data.blockedSites)
         blockedKeywords.addAll(data.blockedKeywords)
+        whitelistedSites.addAll(data.whitelistedSites)
 
 
         // Establish the VpnInterface connection descriptor if not yet created
@@ -97,13 +116,20 @@ class SafeVpnService : VpnService(), Runnable {
             val builder = Builder()
             builder.addAddress("10.0.0.2", 32)
             
-            // Jetpack DataStore fallback string check or empty fallback
-            val customDns = ""
+            // Read custom DNS from DataStore or fallback to FOSS pool
+            val customDns = data.customDns
+            var configuredCustomDns = false
             if (customDns.isNotEmpty()) {
-                builder.addDnsServer(customDns)
-                builder.addRoute(customDns, 32)
-                Log.i(TAG, "Configuring single custom DNS upstream: $customDns")
-            } else {
+                try {
+                    builder.addDnsServer(customDns)
+                    builder.addRoute(customDns, 32)
+                    Log.i(TAG, "Configuring single custom DNS upstream: $customDns")
+                    configuredCustomDns = true
+                } catch (e: Exception) {
+                    Log.w(TAG, "Invalid custom DNS server '$customDns', falling back to FOSS pool", e)
+                }
+            }
+            if (!configuredCustomDns) {
                 // FOSS pool strategy: Add multiple reliable FOSS alternative backbones
                 // If any upstream drops or gets interrupted, the system automatically cycles through remaining operational ones.
                 val fossPool = listOf(
@@ -296,10 +322,12 @@ class SafeVpnService : VpnService(), Runnable {
     }
 
     /**
-     * Checks if a domain string contains any of the blocked sites or blacklisted keywords.
+     * Checks if a domain string contains any of the blocked sites or blacklisted keywords,
+     * respecting explicit whitelist overrides first.
      */
     private fun shouldBlockDomain(domain: String): Boolean {
         val lowerDomain = domain.lowercase()
+        if (whitelistedSites.any { lowerDomain.contains(it) }) return false
         if (blockedSites.any { lowerDomain.contains(it) }) return true
         if (blockedKeywords.any { lowerDomain.contains(it) }) return true
         return false

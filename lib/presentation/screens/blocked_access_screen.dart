@@ -13,7 +13,7 @@ class BlockedAccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -48,11 +48,16 @@ class BlockedAccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: Text(
                   'ClearNet has restricted access to this content because it matches your prohibited domains or keywords rules. Please return to a safe browsing page.',
@@ -68,7 +73,7 @@ class BlockedAccessScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     platform.invokeMethod('goHome');
                   },
                   style: ElevatedButton.styleFrom(
