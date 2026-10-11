@@ -34,6 +34,19 @@ class AppTourManager {
     debugPrint('AppTourManager: permissions updated');
   }
 
+  static bool _isRegistered = false;
+
+  /// Ensures ShowcaseView is registered.  Safe to call multiple times.
+  static void ensureRegistration() {
+    if (_isRegistered) return;
+    try {
+      ShowcaseView.get();
+      _isRegistered = true;
+    } catch (_) {
+      initialiseAppTour();
+    }
+  }
+
   /// Initialises and registers the global configuration for [ShowcaseView].
   /// Call this during app startup or before displaying the main UI (e.g. in [main.dart] on [BottomNavBar]).
   static void initialiseAppTour({
@@ -91,20 +104,14 @@ class AppTourManager {
           backgroundColor: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
         TooltipActionButton(
           type: TooltipDefaultActionType.next,
           name: 'Next',
           borderRadius: BorderRadius.circular(12),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
       ],
       onDismiss: (key) {
@@ -112,9 +119,12 @@ class AppTourManager {
         onDismiss?.call();
       },
     );
+    _isRegistered = true;
   }
 
   /// Wraps any given [child] widget with a [Showcase] spotlight.
+  /// Falls back to rendering [child] directly when ShowcaseView is not registered
+  /// (e.g. in unit/widget tests that don't set up the showcase).
   static Widget appTourItem({
     required GlobalKey key,
     required Widget child,
@@ -128,6 +138,7 @@ class AppTourManager {
     Color? textColor,
     Widget Function(BuildContext)? customTooltip,
   }) {
+    ensureRegistration();
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -143,17 +154,18 @@ class AppTourManager {
             letterSpacing: 0.15,
           ),
           descTextStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: textColor?.withValues(alpha: 0.8) ?? colorScheme.onSurfaceVariant,
+            color:
+                textColor?.withValues(alpha: 0.8) ??
+                colorScheme.onSurfaceVariant,
             height: 1.4,
           ),
           tooltipBackgroundColor:
               tooltipBackgroundColor ?? colorScheme.surfaceContainerHigh,
           tooltipBorderRadius: BorderRadius.circular(20),
           tooltipPadding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-          targetShapeBorder: targetShapeBorder ??
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+          targetShapeBorder:
+              targetShapeBorder ??
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           targetPadding: targetPadding ?? const EdgeInsets.all(8),
           tooltipPosition: tooltipPosition,
           onTargetClick: onTargetClick,
@@ -169,6 +181,7 @@ class AppTourManager {
   /// Starts the showcase walkthrough for the provided list of [keys].
   static void startAppTour(List<GlobalKey> keys) {
     if (keys.isEmpty) return;
+    ensureRegistration();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ShowcaseView.get().startShowCase(keys);
     });
@@ -176,18 +189,25 @@ class AppTourManager {
 
   /// Starts the showcase walkthrough if:
   /// 1. The user hasn't completed/seen the tour yet (checked via [tourKey]).
-  /// 2. Safe Browsing / Accessibility Service is enabled.
-  /// 3. Battery Optimisation is disabled (ignored).
-  /// 4. No modal dialog or overlay route is currently visible on top of [context].
+  /// 2. The global app-tour flag has not been set (prevents re-showing after
+  ///    a one-time global dismissal, e.g. during onboarding).
+  /// 3. Safe Browsing / Accessibility Service is enabled.
+  /// 4. Battery Optimisation is disabled (ignored).
+  /// 5. No modal dialog or overlay route is currently visible on top of [context].
   static Future<bool> startAppTourIfReady({
     required BuildContext context,
     required List<GlobalKey> keys,
     String? tourKey,
   }) async {
+    ensureRegistration();
     final keyToUse = tourKey ?? _appTourCompletedKey;
     final prefs = SharedPreferencesAsync();
+
+    // Check both the screen-specific key and the global key so that setting
+    // `has_seen_app_tour = true` suppresses every individual screen tour.
+    final hasSeenGlobal = await prefs.getBool(_appTourCompletedKey) ?? false;
     final hasSeen = await prefs.getBool(keyToUse) ?? false;
-    if (hasSeen || keys.isEmpty) return false;
+    if (hasSeenGlobal || hasSeen || keys.isEmpty) return false;
 
     // Verify Safe Browsing / Accessibility service is enabled
     final isAccessibilityEnabled =
@@ -196,7 +216,7 @@ class AppTourManager {
 
     // Verify Battery Optimisation is disabled
     final isBatteryOptimised =
-        await VpnController.isIgnoringBatteryOptimizations();
+        await VpnController.isIgnoringBatteryOptimisations();
     if (!isBatteryOptimised) return false;
 
     // Verify no dialog or route is showing on top of the context route
@@ -215,6 +235,7 @@ class AppTourManager {
     List<GlobalKey> keys, {
     String? tourKey,
   }) async {
+    ensureRegistration();
     final keyToUse = tourKey ?? _appTourCompletedKey;
     final prefs = SharedPreferencesAsync();
     final hasSeen = await prefs.getBool(keyToUse) ?? false;

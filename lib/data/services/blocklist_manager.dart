@@ -1,4 +1,5 @@
 // Dart imports:
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -75,7 +76,7 @@ class BlocklistManager {
     }
 
     await buildFinalBlocklist();
-    await _saveToFile();
+    unawaited(_saveToFile());
   }
 
   /// Load baseline data from bundled JSON asset
@@ -143,7 +144,7 @@ class BlocklistManager {
       current.add(cleaned);
       await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist(); // Sync to native
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -155,7 +156,7 @@ class BlocklistManager {
       current.add(cleaned);
       await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist(); // Sync to native
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -167,7 +168,7 @@ class BlocklistManager {
       current.add(cleaned);
       await _prefs.setStringList(_userWhitelistKey, current);
       await buildFinalBlocklist(); // Sync to native
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -177,7 +178,7 @@ class BlocklistManager {
     if (current.remove(domain.toLowerCase())) {
       await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -187,7 +188,7 @@ class BlocklistManager {
     if (current.remove(keyword.toLowerCase())) {
       await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -197,7 +198,7 @@ class BlocklistManager {
     if (current.remove(whitelist.toLowerCase())) {
       await _prefs.setStringList(_userWhitelistKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -216,7 +217,7 @@ class BlocklistManager {
       current[index] = newCleaned;
       await _prefs.setStringList(_userDomainsKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -236,7 +237,7 @@ class BlocklistManager {
       current[index] = newCleaned;
       await _prefs.setStringList(_userKeywordsKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
@@ -256,21 +257,25 @@ class BlocklistManager {
       current[index] = newCleaned;
       await _prefs.setStringList(_userWhitelistKey, current);
       await buildFinalBlocklist();
-      await _saveToFile();
+      unawaited(_saveToFile());
     }
   }
 
   static Future<void> _saveToFile() async {
-    final domains = await loadUserDomains();
-    final keywords = await loadUserKeywords();
-    final whitelisted = await loadUserWhitelist();
-    final file = await _getLocalFile();
-    final jsonString = json.encode({
-      'domains': domains,
-      'keywords': keywords,
-      'whitelist': whitelisted,
-    });
-    await file.writeAsString(jsonString);
+    try {
+      final domains = await loadUserDomains();
+      final keywords = await loadUserKeywords();
+      final whitelisted = await loadUserWhitelist();
+      final file = await _getLocalFile();
+      final jsonString = json.encode({
+        'domains': domains,
+        'keywords': keywords,
+        'whitelist': whitelisted,
+      });
+      await file.writeAsString(jsonString);
+    } catch (_) {
+      // File I/O is a non-critical cache; errors are silently ignored.
+    }
   }
 
   /// Merge all sources and sync to SharedPreferences for Android access
@@ -323,7 +328,7 @@ class BlocklistManager {
     );
 
     await buildFinalBlocklist();
-    await _saveToFile();
+    unawaited(_saveToFile());
   }
 
   /// Clear all user domains, keywords, whitelist, and final blocklists
@@ -336,7 +341,7 @@ class BlocklistManager {
     await _prefs.setStringList(_finalKeywordsKey, []);
     await _prefs.setStringList(_finalWhitelistKey, []);
 
-    await _saveToFile();
+    unawaited(_saveToFile());
   }
 
   /// Check domain against merged blocklist + keywords
@@ -400,7 +405,7 @@ class BlocklistManager {
       await buildFinalBlocklist();
 
       if (syncToFile) {
-        await _saveToFile();
+        unawaited(_saveToFile());
       }
     } catch (e) {
       throw Exception('Invalid JSON format for blocklist import');
