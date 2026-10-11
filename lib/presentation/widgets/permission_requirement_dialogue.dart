@@ -16,6 +16,7 @@ class PermissionRequirementDialogue extends StatefulWidget {
     required this.onCheckPermission,
     required this.onExitPressed,
     required this.notEnabledMessage,
+    this.primaryActionTextChangeDelay = Duration.zero,
   });
 
   final String title;
@@ -27,6 +28,7 @@ class PermissionRequirementDialogue extends StatefulWidget {
   final Future<bool> Function() onCheckPermission;
   final VoidCallback onExitPressed;
   final String notEnabledMessage;
+  final Duration primaryActionTextChangeDelay;
 
   @override
   State<PermissionRequirementDialogue> createState() =>
@@ -37,6 +39,8 @@ class _PermissionRequirementDialogueState
     extends State<PermissionRequirementDialogue>
     with WidgetsBindingObserver {
   bool _hasClickedAction = false;
+  bool _hasTriggeredAction = false;
+  bool _isWaitingForTextChange = false;
   bool _isChecking = false;
   String? _errorMessage;
   Timer? _pollingTimer;
@@ -122,15 +126,24 @@ class _PermissionRequirementDialogueState
   }
 
   Future<void> _handlePrimaryAction() async {
-    if (_isChecking) return;
+    if (_isChecking || _isWaitingForTextChange) return;
 
-    if (!_hasClickedAction) {
+    if (!_hasTriggeredAction) {
       setState(() {
-        _hasClickedAction = true;
+        _hasTriggeredAction = true;
+        _isWaitingForTextChange = true;
         _errorMessage = null;
       });
       await widget.onActionPressed();
       _startPollingTimer();
+      if (widget.primaryActionTextChangeDelay > Duration.zero) {
+        await Future<void>.delayed(widget.primaryActionTextChangeDelay);
+      }
+      if (!mounted) return;
+      setState(() {
+        _hasClickedAction = true;
+        _isWaitingForTextChange = false;
+      });
     } else {
       await _checkPermissionInternal(
         autoCloseOnSuccess: true,
@@ -161,7 +174,8 @@ class _PermissionRequirementDialogueState
             if (_hasClickedAction) ...[
               const SizedBox(height: 12),
               Text(
-                'Once enabled in settings, tap "${widget.clickedButtonText}" or return to this app.',
+                'Once enabled in settings, return to this app or '
+                'tap "${widget.clickedButtonText}" ',
                 style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
@@ -199,7 +213,9 @@ class _PermissionRequirementDialogueState
               child: const Text('Open Settings'),
             ),
           ElevatedButton(
-            onPressed: _isChecking ? null : _handlePrimaryAction,
+            onPressed: _isChecking || _isWaitingForTextChange
+                ? null
+                : _handlePrimaryAction,
             child: _isChecking
                 ? const SizedBox(
                     width: 16,

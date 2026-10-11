@@ -1,11 +1,12 @@
 ---
-
 name: Bug report
 about: Report a reproducible problem with the project
-title: "[Bug]: "
-labels: "bug, needs-triage"
-assignees: ""
--------------
+title: '[Bug]: '
+labels: 'bug, needs-triage'
+assignees: ''
+---
+
+---
 
 ## Description
 
@@ -37,21 +38,22 @@ What actually happened?
 
 ## Environment
 
-* App version:
-* Android version:
-* Device / emulator:
-* Build variant:
+- App version:
+- Android version:
+- Device / emulator:
+- Build variant:
 
 ## Logs / Stack trace
 
 <!--
 If applicable, include relevant logs or a stack trace.
 
-Please remove passwords, API keys, tokens, personal information, or other
+Please remove passwords, API keys, tokens, personal information or other
 sensitive data before posting logs.
 -->
 
 ```text
+
 ```
 
 ## Screenshots / Videos
@@ -68,8 +70,8 @@ Add any other information that may help reproduce or diagnose the issue.
 
 ## Checklist
 
-* [ ] I have searched existing issues for duplicates.
-* [ ] I have provided steps to reproduce the problem.
-* [ ] I have included relevant environment information.
-* [ ] I have removed sensitive information from logs and screenshots.
-* [ ] I have provided a clear and descriptive title.
+- [ ] I have searched existing issues for duplicates.
+- [ ] I have provided steps to reproduce the problem.
+- [ ] I have included relevant environment information.
+- [ ] I have removed sensitive information from logs and screenshots.
+- [ ] I have provided a clear and descriptive title.

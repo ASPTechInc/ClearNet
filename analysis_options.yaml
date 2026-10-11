@@ -1,14 +1,16 @@
 # This file configures the analyser, which statically analyses Dart code to
-# check for errors, warnings, and lints.
+# check for errors, warnings and lints.
 #
 # The issues identified by the analyser are surfaced in the UI of Dart-enabled
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyser can also be
 # invoked from the command line by running `flutter analyze`.
 
 # The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
+# packages and plugins designed to encourage good coding practices.
 #
+# To preview the proposed changes: dart fix --dry-run
 # To apply lint: dart fix --apply
+#
 analyzer:
   exclude:
     - build/**
@@ -45,6 +47,7 @@ linter:
     empty_statements: true
     file_names: true
     library_prefixes: true
+    lines_longer_than_80_chars: true # Warns about lines longer than 80 characters including long strings
     no_logic_in_create_state: true
     no_wildcard_variable_uses: true
     prefer_const_constructors: true

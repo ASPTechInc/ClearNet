@@ -136,3 +136,7 @@ clear_net/
 .vars
 .secrets
 .env
+.env.*
+
+# Custom
+assets/data/blocklist-prod.json

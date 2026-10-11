@@ -15,7 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
-import 'package:clearnet/data/models/dns_preset.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
@@ -43,29 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   final GlobalKey _dnsKey = GlobalKey();
   final GlobalKey _replayTourKey = GlobalKey();
   Timer? _tourTimer;
-
-  static const List<DnsPreset> _dnsPresets = [
-    DnsPreset(id: 'default', label: 'Default (FOSS Cluster)', ip: ''),
-    DnsPreset(id: '9.9.9.9', label: 'Quad9 (9.9.9.9)', ip: '9.9.9.9'),
-    DnsPreset(
-      id: '194.242.2.14',
-      label: 'Mullvad DNS (194.242.2.14)',
-      ip: '194.242.2.14',
-    ),
-    DnsPreset(
-      id: '94.140.14.14',
-      label: 'AdGuard DNS (94.140.14.14)',
-      ip: '94.140.14.14',
-    ),
-    DnsPreset(
-      id: '91.239.100.100',
-      label: 'UncensoredDNS (91.239.100.100)',
-      ip: '91.239.100.100',
-    ),
-    DnsPreset(id: '1.1.1.1', label: 'Cloudflare (1.1.1.1)', ip: '1.1.1.1'),
-    DnsPreset(id: '8.8.8.8', label: 'Google DNS (8.8.8.8)', ip: '8.8.8.8'),
-    DnsPreset(id: 'custom', label: 'Custom IP Address', ip: ''),
-  ];
 
   bool _appLockEnabled = false;
   bool _lockSettingsEnabled = false;
@@ -96,7 +72,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(_onPermissionsUpdated);
+    AppTourManager.permissionsCheckNotifier.removeListener(
+      _onPermissionsUpdated,
+    );
     WidgetsBinding.instance.removeObserver(this);
     _dnsController.dispose();
     super.dispose();
@@ -167,7 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Disguise set to ${disguise.toUpperCase()}. It may take a few moments to update the launcher.',
+              'Disguise set to ${disguise.toUpperCase()}. It may take a '
+              'few moments to update the launcher.',
             ),
           ),
         );
@@ -206,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       _selectedDnsPresetId = 'default';
       return;
     }
-    for (final preset in _dnsPresets) {
+    for (final preset in Constants.dnsPresets) {
       if (preset.id != 'default' &&
           preset.id != 'custom' &&
           preset.ip == trimmed) {
@@ -232,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       await _saveCustomDns('');
     } else if (newValue == 'custom') {
       final currentText = _dnsController.text.trim();
-      final isPresetIp = _dnsPresets.any(
+      final isPresetIp = Constants.dnsPresets.any(
         (p) => p.ip.isNotEmpty && p.ip == currentText,
       );
       if (isPresetIp) {
@@ -240,9 +219,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         await _saveCustomDns('');
       }
     } else {
-      final selectedPreset = _dnsPresets.firstWhere(
+      final selectedPreset = Constants.dnsPresets.firstWhere(
         (preset) => preset.id == newValue,
-        orElse: () => _dnsPresets.first,
+        orElse: () => Constants.dnsPresets.first,
       );
       _dnsController.text = selectedPreset.ip;
       await _saveCustomDns(selectedPreset.ip);
@@ -416,7 +395,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context) => AlertDialog(
         title: const Text('Clear content'),
         content: const Text(
-          'This will remove all items from blocked websites, keywords, whitelist, and unselect all blocked apps. Do you want to proceed?',
+          'This will remove all items from blocked websites, keywords, '
+          'whitelist and unselect all blocked apps. Do you want to proceed?',
         ),
         actions: [
           TextButton(
@@ -447,7 +427,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context) => AlertDialog(
         title: const Text('Reset content'),
         content: const Text(
-          'This will reset blocked sites, keywords, and whitelist to default data. Do you want to proceed?',
+          'This will reset blocked sites, keywords and whitelist to '
+          'default data. Do you want to proceed?',
         ),
         actions: [
           TextButton(
@@ -524,18 +505,20 @@ class _SettingsScreenState extends State<SettingsScreen>
               _changeDisguise(value);
             }
           },
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              RadioListTile<String>(
+             const RadioListTile<String>(
                 title: Text('None (Default)'),
                 value: 'none',
               ),
               RadioListTile<String>(
-                title: Text('Calculator'),
-                value: 'calculator',
+                title: const Text(Constants.appCalculatorDisguiseName),
+                value: Constants.appCalculatorDisguiseName.toLowerCase(),
               ),
-              RadioListTile<String>(title: Text('Notes'), value: 'notes'),
+              RadioListTile<String>(title: 
+              const Text(Constants.appNotesDisguiseName), 
+              value: Constants.appNotesDisguiseName.toLowerCase()),
             ],
           ),
         ),
@@ -549,7 +532,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context) => AlertDialog(
         title: const Text('Reliability note'),
         content: const Text(
-          'For the VPN, website, and app blocking to work reliably, battery optimisation has to be disabled and the Safe Browsing service has to be enabled while using ClearNet.',
+          'For the VPN, website and app blocking to work reliably, '
+          'battery optimisation has to be disabled and the Safe '
+          'browsing service has to be enabled while '
+          'using ${Constants.appName}.',
         ),
         actions: [
           TextButton(
@@ -664,7 +650,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ClearNet is free open-source software (FOSS). The complete source code, issue tracker, and build instructions are publicly available.',
+                '${Constants.appName} is free open-source software (FOSS). '
+                'The complete source code, issue tracker and build '
+                'instructions are publicly available.',
               ),
               SizedBox(height: 12),
               SelectableText(
@@ -698,17 +686,20 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Support ClearNet'),
+          title: const Text('Support ${Constants.appName}'),
           content: const Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ClearNet is built and maintained as a free, open-source project with no ads, subscriptions, or tracking.',
+                '${Constants.appName} is built and maintained as a free, '
+                'open-source project with no ads, subscriptions or tracking.',
               ),
               SizedBox(height: 12),
               Text(
-                'If you appreciate ClearNet and wish to support its continued development, you can buy the lead developer a coffee!',
+                'If you appreciate ${Constants.appName} and wish to support '
+                'its continued development, you can buy the lead developer '
+                'a coffee!',
               ),
               SizedBox(height: 12),
               SelectableText(
@@ -795,22 +786,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       // Extract features (lines starting with '-')
       final lines = trimmedBlock.split('\n');
       final List<String> features = [];
-      //String? description;
 
       for (var line in lines) {
         final trimmedLine = line.trim();
         if (trimmedLine.startsWith('-')) {
           features.add(trimmedLine.substring(1).trim());
-        } else if (trimmedLine.isNotEmpty &&
-            !trimmedLine.startsWith('#') &&
-            !trimmedLine.startsWith('!')) {
-          // Capture the description text if it's not a header
-          // if (description == null) {
-          //   description = trimmedLine;
-          // } else {
-          //   description += ' $trimmedLine';
-          // }
-        }
+        } 
       }
 
       widgets.add(
@@ -852,19 +833,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                 const SizedBox(height: 16),
-                // if (description != null && description.isNotEmpty)
-                //   Padding(
-                //     padding: const EdgeInsets.only(bottom: 16.0),
-                //     child: RichText(
-                //       text: TextSpan(
-                //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                //               color: Theme.of(context).colorScheme.onSurface,
-                //               height: 1.4,
-                //             ),
-                //         children: _parseBoldText(description),
-                //       ),
-                //     ),
-                //   ),
                 ...features.map(
                   (feature) => Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -1034,7 +1002,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             key: _appLockKey,
             title: 'App lock',
             description:
-                'Require a secure PIN to open ClearNet or protect Settings section from unauthorised changes.',
+                'Require a secure PIN to open ${Constants.appName} or '
+                'protect Settings section from unauthorised changes.',
             child: SwitchListTile(
               title: const Text('Set app PIN'),
               value: _appLockEnabled,
@@ -1059,7 +1028,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             key: _disguiseKey,
             title: 'Disguise mode',
             description:
-                'Disguise ClearNet on your home screen as a calculator, calendar or other innocuous application.',
+                'Disguise ${Constants.appName} on your home screen as a '
+                'calculator, calendar or other innocuous application.',
             child: ListTile(
               title: const Text('Disguise mode'),
               subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
@@ -1085,7 +1055,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               subtitle: Text(
                 _isUninstallPinSet
                     ? 'PIN is set and permanent'
-                    : 'Set a PIN to prevent unauthorised uninstallation of the application',
+                    : 'Set a PIN to prevent unauthorised uninstallation '
+                    'of the application',
               ),
               trailing: _isUninstallPinSet
                   ? const Icon(Icons.lock, color: Colors.green)
@@ -1098,7 +1069,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'Warning: Once set, the Uninstall PIN cannot be changed or reset.',
+                'Warning: Once set, the Uninstall PIN cannot be changed '
+                'or reset.',
                 style: TextStyle(color: Colors.orange, fontSize: 12),
               ),
             ),
@@ -1114,7 +1086,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             key: _dnsKey,
             title: 'Secure DNS Resolver',
             description:
-                'Choose a curated encrypted DNS resolver (like Quad9 or Cloudflare) or enter a custom DNS server.',
+                'Choose a curated encrypted DNS resolver (like Quad9 or '
+                'Cloudflare) or enter a custom DNS server.',
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -1132,7 +1105,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.dns_outlined),
                     ),
-                    items: _dnsPresets.map((preset) {
+                    items: Constants.dnsPresets.map((preset) {
                       return DropdownMenuItem<String>(
                         value: preset.id,
                         child: Text(
@@ -1192,17 +1165,20 @@ class _SettingsScreenState extends State<SettingsScreen>
             key: _replayTourKey,
             title: 'Replay Feature Tour',
             description:
-                'Reset and replay the feature walkthrough across all screens at any time.',
+                'Reset and replay the feature walkthrough across all screens '
+                'at any time.',
             child: ListTile(
               title: const Text('Replay app tour'),
-              subtitle: const Text('Walkthrough key features of ClearNet'),
+              subtitle: const Text('Walkthrough key features '
+              'of ${Constants.appName}'),
               onTap: () async {
                 await AppTourManager.resetAppTourState();
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Feature tour reset. Switch to Protection screen to start.',
+                      'Feature tour reset. Switch to Protection screen to '
+                      'start.',
                     ),
                   ),
                 );

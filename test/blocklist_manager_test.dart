@@ -35,7 +35,7 @@ void main() {
           .setMockMessageHandler('flutter/assets', (ByteData? message) async {
             if (message == null) return null;
             final String key = utf8.decode(message.buffer.asUint8List());
-            if (key.contains('blocklist.json')) {
+            if (key.contains(Constants.blocklistFileName)) {
               final encoded = json.encode(fakeAssetJson);
               return ByteData.view(
                 Uint8List.fromList(utf8.encode(encoded)).buffer,
@@ -93,7 +93,8 @@ void main() {
     });
 
     test(
-      'buildFinalBlocklist correctly merges baseline assets and user-configured sites',
+      'buildFinalBlocklist correctly merges baseline assets and '
+      'user-configured sites',
       () async {
         await BlocklistManager.addUserDomain('customblocked.org');
         await BlocklistManager.addUserWhitelist('myallowedsite.com');
@@ -156,12 +157,14 @@ void main() {
     });
 
     test(
-      'shouldBlock respects whitelist override over blocked keywords and domains',
+      'shouldBlock respects whitelist override over blocked keywords '
+      'and domains',
       () async {
         await BlocklistManager.addUserWhitelist('custom-casino-news.com');
         await BlocklistManager.buildFinalBlocklist();
 
-        // "casino" is a blocked keyword, but "safe-casino.com" (from asset) & "custom-casino-news.com" are whitelisted
+        // "casino" is a blocked keyword, but "safe-casino.com" (from asset) 
+        //& "custom-casino-news.com" are whitelisted
         expect(await BlocklistManager.shouldBlock('safe-casino.com'), isFalse);
         expect(
           await BlocklistManager.shouldBlock('custom-casino-news.com'),

@@ -82,7 +82,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
   }
 }
 
-/// A wrapper widget that enforces PIN lock verification before displaying its [child].
+/// A wrapper widget that enforces PIN lock verification before displaying 
+/// its [child].
 /// If lock settings is enabled and [AppSession.isSettingsUnlocked] is false,
 /// [PinLockScreen] is displayed until the user enters the correct PIN.
 class PinGuardedTab extends StatefulWidget {

@@ -16,6 +16,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/presentation/screens/blocked_sites.dart';
+import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,7 +61,7 @@ void main() {
               } catch (_) {}
             }
 
-            if (key.contains('blocklist.json')) {
+            if (key.contains(Constants.blocklistFileName)) {
               final encoded = json.encode({
                 'domains': [],
                 'keywords': [],

@@ -50,7 +50,9 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen>
   @override
   void dispose() {
     _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(_onPermissionsUpdated);
+    AppTourManager.permissionsCheckNotifier.removeListener(
+      _onPermissionsUpdated,
+    );
     WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
@@ -73,10 +75,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen>
       if (!mounted) return;
       await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [
-          _searchKey,
-          _appToggleKey,
-        ],
+        keys: [_searchKey, _appToggleKey],
         tourKey: AppTourManager.blockedAppsTourKey,
       );
     });
@@ -147,7 +146,8 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen>
               key: _searchKey,
               title: 'Search Applications',
               description:
-                  'Find any installed application by typing its name or package name.',
+                  'Find any installed application by typing its name or '
+                  'package name.',
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -186,7 +186,8 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen>
                     key: _appToggleKey,
                     title: 'Block Application',
                     description:
-                        'Toggle the switch to block or allow access to specific installed apps.',
+                        'Toggle the switch to block or allow access to '
+                        'specific installed apps.',
                     child: tile,
                   );
                 }

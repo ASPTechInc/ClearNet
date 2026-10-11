@@ -33,7 +33,7 @@ class ClearNetApp extends StatefulWidget {
 class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
   static const platform = MethodChannel(Constants.methodChannelName);
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-  bool _isDialogShowing = false;
+  bool _isDialogueShowing = false;
 
   @override
   void initState() {
@@ -92,17 +92,17 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
   }
 
   Future<void> _checkRequiredPermissions() async {
-    if (_isDialogShowing) return;
+    if (_isDialogueShowing) return;
 
     final bool isAccessibilityEnabled =
         await VpnController.isAccessibilityServiceEnabled();
     if (!isAccessibilityEnabled) {
-      final bool granted = await _showAccessibilityDialog();
+      final bool granted = await _showAccessibilityDialogue();
       if (!granted) return;
     }
 
     final bool isBatteryOptimised =
-        await VpnController.isIgnoringBatteryOptimizations();
+        await VpnController.isIgnoringBatteryOptimisations();
     if (!isBatteryOptimised) {
       final bool granted = await _showBatteryOptimisationDialog();
       if (!granted) return;
@@ -111,21 +111,24 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     AppTourManager.notifyPermissionsUpdated();
   }
 
-  Future<bool> _showAccessibilityDialog() async {
+  Future<bool> _showAccessibilityDialogue() async {
     final context = navigatorKey.currentContext;
     if (context == null) return false;
 
-    _isDialogShowing = true;
+    _isDialogueShowing = true;
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => PermissionRequirementDialogue(
         title: 'Action required',
         description:
-            'ClearNet requires the Safe Browsing Service to be enabled to ensure your safety while browsing. '
-            'Please enable it in the Accessibility settings to continue using the app.',
+            '${Constants.appName} requires the Safe browsing service to be '
+            'enabled to ensure your safety while browsing.\n\n'
+            'Please enable it in the Accessibility settings to continue '
+            'using the app.',
         initialButtonText: 'Enable service',
         clickedButtonText: 'Confirm enabling',
+        primaryActionTextChangeDelay: const Duration(seconds: 2),
         exitButtonText: 'Exit app',
         onActionPressed: () async {
           await VpnController.openAccessibilitySettings();
@@ -135,10 +138,12 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
         },
         onExitPressed: () => SystemNavigator.pop(),
         notEnabledMessage:
-            'Safe Browsing Service is not enabled yet. Please locate "ClearNet" under "Installed apps" in Accessibility settings and turn it on.',
+            'Safe browsing service is not enabled yet. Please locate '
+            '"${Constants.appName}" under "Installed apps" in Accessibility '
+            'settings and turn it on.',
       ),
     );
-    _isDialogShowing = false;
+    _isDialogueShowing = false;
     return result ?? false;
   }
 
@@ -146,14 +151,16 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     final context = navigatorKey.currentContext;
     if (context == null) return false;
 
-    _isDialogShowing = true;
+    _isDialogueShowing = true;
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => PermissionRequirementDialogue(
         title: 'Battery performance',
         description:
-            'For the VPN and Website Blocking to work reliably, battery optimisation has to be disabled for ClearNet.',
+            'Battery optimisation has to be disabled for '
+            '${Constants.appName} in order for the VPN and website '
+            'blocking to work reliably.',
         initialButtonText: 'Disable optimisation',
         clickedButtonText: 'Confirm disabling',
         exitButtonText: 'Exit app',
@@ -161,14 +168,15 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
           await VpnController.requestIgnoreBatteryOptimisations();
         },
         onCheckPermission: () async {
-          return VpnController.isIgnoringBatteryOptimizations();
+          return VpnController.isIgnoringBatteryOptimisations();
         },
         onExitPressed: () => SystemNavigator.pop(),
         notEnabledMessage:
-            'Battery optimisation is still active for ClearNet. Please allow ignoring battery optimisation.',
+            'Battery optimisation is still active for ${Constants.appName}. '
+            'Please allow ignoring battery optimisation.',
       ),
     );
-    _isDialogShowing = false;
+    _isDialogueShowing = false;
     return result ?? false;
   }
 

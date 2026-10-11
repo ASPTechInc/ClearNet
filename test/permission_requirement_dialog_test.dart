@@ -69,7 +69,8 @@ void main() {
       expect(actionPressed, true);
       expect(find.text('Confirm enabling'), findsOneWidget);
       expect(
-        find.textContaining('Once enabled in settings, tap "Confirm enabling"'),
+        find.textContaining('Once enabled in settings, return to this app '
+        'or tap "Confirm enabling"'),
         findsOneWidget,
       );
     });
@@ -112,10 +113,11 @@ void main() {
     });
 
     testWidgets(
-      'dismisses dialogue returning true when permission is granted on confirm click',
+      'dismisses dialogue returning true when permission is '
+      'granted on confirm click',
       (WidgetTester tester) async {
         bool permissionGranted = false;
-        bool? dialogResult;
+        bool? dialogueResult;
 
         await tester.pumpWidget(
           MaterialApp(
@@ -123,7 +125,7 @@ void main() {
               body: Builder(
                 builder: (context) => ElevatedButton(
                   onPressed: () async {
-                    dialogResult = await showDialog<bool>(
+                    dialogueResult = await showDialog<bool>(
                       context: context,
                       builder: (context) => PermissionRequirementDialogue(
                         title: 'Action required',
@@ -159,16 +161,17 @@ void main() {
         await tester.tap(find.text('Confirm enabling'));
         await tester.pumpAndSettle();
 
-        expect(dialogResult, true);
+        expect(dialogueResult, true);
         expect(find.text('Action required'), findsNothing);
       },
     );
 
     testWidgets(
-      'dismisses dialogue returning true via polling timer when permission is granted',
+      'dismisses dialogue returning true via polling timer when permission '
+      'is granted',
       (WidgetTester tester) async {
         bool permissionGranted = false;
-        bool? dialogResult;
+        bool? dialogueResult;
 
         await tester.pumpWidget(
           MaterialApp(
@@ -176,7 +179,7 @@ void main() {
               body: Builder(
                 builder: (context) => ElevatedButton(
                   onPressed: () async {
-                    dialogResult = await showDialog<bool>(
+                    dialogueResult = await showDialog<bool>(
                       context: context,
                       builder: (context) => PermissionRequirementDialogue(
                         title: 'Action required',
@@ -210,7 +213,7 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();
 
-        expect(dialogResult, true);
+        expect(dialogueResult, true);
         expect(find.text('Action required'), findsNothing);
       },
     );

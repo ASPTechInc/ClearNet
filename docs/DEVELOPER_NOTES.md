@@ -17,7 +17,7 @@
 
 ## Overview
 
-This document provides an overview of the Flutter/Dart concepts, commands, and project-specific 
+This document provides an overview of the Flutter/Dart concepts, commands and project-specific
 workflows used in ClearNet to help new developers get up to speed quickly.
 
 It complements what is documented in the [README](/README.md).
@@ -27,6 +27,7 @@ It complements what is documented in the [README](/README.md).
 ## Useful commands for developers
 
 ### Code quality & Maintenance
+
 - **Format everything**: `dart format .`
 - **Check for static analysis issues**: `flutter analyze`
 - **Run all unit/widget tests**: `flutter test`
@@ -35,16 +36,19 @@ It complements what is documented in the [README](/README.md).
 - **Check environment health**: `flutter doctor`
 
 ### Build commands
+
 - **Build Debug APK**: `flutter build apk --debug`
 - **Build Release APK**: `flutter build apk --release`
 - **Build Release App Bundle (AAB)**: `flutter build appbundle --release`
 
 ### Execution & Telemetry
+
 - **List available Emulators**: `flutter emulators`
 - **Disable Dart/Flutter telemetry**: `dart --disable-analytics`
 - **Force kill hanging Dart processes**: `pkill -9 dart`
 
 ### Framework upgrades
+
 - **Upgrade Dart**: `sudo apt-get update && sudo apt-get install dart`
 - **Upgrade Dart version**: `dart --version`
 
@@ -59,11 +63,11 @@ To update the app to a higher version:
 
 1. Insert a new entry in the [CHANGELOG.md](/CHANGELOG.md) describing the changes.
 2. Open the [pubspec.yaml](/pubspec.yaml) file and locate the `version:` line (e.g., `version: 1.0.0+1`).
-   - Increment the version name before the `+` (e.g., `1.0.1`) which corresponds to Android's 
+   - Increment the version name before the `+` (e.g., `1.0.1`) which corresponds to Android's
      `versionName`.
-   - Increment the build number after the `+` (e.g., `2`) which corresponds to Android's 
+   - Increment the build number after the `+` (e.g., `2`) which corresponds to Android's
      `versionCode`.
-3. Add any relevant text changelogs required for metadata updates if Fastlane or Google Play 
+3. Add any relevant text changelogs required for metadata updates if Fastlane or Google Play
    deployment pipelines are configured.
 
 ---
@@ -96,21 +100,23 @@ base64 -i keystore.jks | tr -d '\n' > keystore.base64
 
 ### Update the local keystore configuration
 
-Copy the example keystore property template from [keystore.properties.example](/android/app/src/keystore.properties.example) into a new 
-file located at `android/app/keystore.properties`. 
+Copy the example keystore property template from [keystore.properties.example](/android/app/src/keystore.properties.example) into a new
+file located at `android/app/keystore.properties`.
 
 Update the configuration variables inside `android/app/keystore.properties`:
+
 ```properties
 storeFile=keystore.jks
 storePassword=YOUR_STORE_PASSWORD
 keyAlias=YOUR_KEY_ALIAS
 keyPassword=YOUR_KEY_PASSWORD
 ```
-*(Ensure `keystore.jks` is placed in `android/app/` if building locally).*
+
+_(Ensure `keystore.jks` is placed in `android/app/` if building locally)._
 
 ### Create environment secrets in GitHub repository
 
-To support automated production builds via GitHub Actions, add the following Repository Secrets in 
+To support automated production builds via GitHub Actions, add the following Repository Secrets in
 GitHub Settings under **Secrets and Variables > Actions**:
 
 ```txt
@@ -123,8 +129,8 @@ KEYSTORE_PASSWORD
 
 ### Create app release via Tags
 
-Push a tag matching the pattern `v*` to the `main` branch. The [release.yml](/.github/workflows/release.yml) workflow will 
-automatically build the release APK and bundle, sign them securely, and create a new GitHub 
+Push a tag matching the pattern `v*` to the `main` branch. The [release.yml](/.github/workflows/release.yml) workflow will
+automatically build the release APK and bundle, sign them securely and create a new GitHub
 Release.
 
 ```bash
@@ -143,11 +149,12 @@ git tag -f v1.0.0 && git push origin v1.0.0 --force
 
 ## App Icon Generation
 
-ClearNet uses the `icons_launcher` package to automatically format and generate adaptive launcher 
-icons for both Android and iOS. This avoids having to manually resize assets in GIMP or third-party 
+ClearNet uses the `icons_launcher` package to automatically format and generate adaptive launcher
+icons for both Android and iOS. This avoids having to manually resize assets in GIMP or third-party
 image manipulation programs.
 
 ### Automated Launcher Icon Configuration
+
 1. Place your high-resolution app icon source file at `assets/images/app-logo.png`.
 2. Ensure the configuration section exists in your [pubspec.yaml](/pubspec.yaml):
    ```yaml
@@ -168,26 +175,29 @@ image manipulation programs.
 
 ## Test GitHub workflows locally
 
-[**`act`**](https://github.com/nektos/act) is used to test workflows locally without pushing to 
-GitHub or exhausting Actions runner minutes. It executes workflow runners inside local Docker 
+[**`act`**](https://github.com/nektos/act) is used to test workflows locally without pushing to
+GitHub or exhausting Actions runner minutes. It executes workflow runners inside local Docker
 containers.
 
 ### Installation
+
 - **macOS (Homebrew)**: `brew install act`
 - **Linux**: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
 - **Windows**: `choco install act` or `scoop install act`
 
 ### Local Workspace Variables
 
-Create these environment configurations at the root directory of the project to enable Android 
+Create these environment configurations at the root directory of the project to enable Android
 SDK bindings within `act`:
 
 `.env` / `.vars`
+
 ```bash
 ANDROID_HOME=/<path-to-your-local-sdk>/Android/Sdk
 ```
 
 ### Running Workflow Tasks
+
 1. **List all available actions/jobs:**
    ```bash
    act -l
@@ -207,7 +217,7 @@ ANDROID_HOME=/<path-to-your-local-sdk>/Android/Sdk
 
 ## Stop tracking files in Git
 
-To wipe untracked build caches or files from Git tracking without deleting them locally from your 
+To wipe untracked build caches or files from Git tracking without deleting them locally from your
 disk, execute the following from the workspace root:
 
 ```bash
@@ -233,16 +243,16 @@ git commit -m "Stop tracking build/ directory"
    ```bash
    # Create Python virtual environment
    python3 -m venv .venv
-   
+
    # Activate environment
    source .venv/bin/activate
-   
+
    # Upgrade pip
    python -m pip install --upgrade pip
-   
+
    # Install pre-commit package
    pip install pre-commit
-   
+
    # Install pre-commit
    pre-commit install
    ```
@@ -255,15 +265,14 @@ git commit -m "Stop tracking build/ directory"
    pre-commit run --all-files
    ```
 
+> Ensure you are within your active Python virtual environment .venv where pre-commit is installed
+> if you haven't installed it globally.
 
->Ensure you are within your active Python virtual environment .venv where pre-commit is installed 
->if you haven't installed it globally.
-
---- 
+---
 
 ## SDK locations
 
->Replace `<username>` with your username
+> Replace `<username>` with your username
 
 Dark SDK is installed at `/home/<username>/flutter/bin/cache/dart-sdk`
 
@@ -283,15 +292,16 @@ The `FlutterPlugin.kt` has the following errors in the Flutter version `3.47.4` 
 
 To solve it, ensure that the `androidExtension` is properly passed to the `FlutterPlugin.kt` file and that all required parameters are provided. You may need to update your Flutter and Android Gradle plugin versions to the latest compatible versions.
 
-Change 
+Change
 
 ```bash
 configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 ```
+
 to
 
 ```kotlin
-configureAbiWithoutSplits(projectToAddTasksTo, androidExtension)
+configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 ```
 
 Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK folder might notice this local modification. If it complains about a conflict, you can safely reset or discard changes in that directory before upgrading (git checkout -- packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt), since the upstream Flutter developers will have officially fixed the typo in the newer version anyway.
@@ -300,11 +310,12 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
 
 ## F-Droid release notes
 
-1. Create a [`.fdroid.yml`](.fdroid.yml) file in the root of your project and 
+1. Create a [`.fdroid.yml`](.fdroid.yml) file in the root of your project and
    [`metadata/com.   asptechinc.clearnet.yml`](metadata/com.asptechinc.clearnet.yml)
 
 2. **Tag the release on Git:**
    Ensure that the release is tagged in the main GitHub repository:
+
    ```bash
    git tag -a v1.0.0 -m "Release 1.0.0"
    git push origin v1.0.0
@@ -327,6 +338,7 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
 
 5. **(Optional) Local Linting with `fdroidserver`:**
    If you have `fdroidserver` or Docker installed:
+
    ```bash
    fdroid lint com.asptechinc.clearnet
    ```

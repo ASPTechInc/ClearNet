@@ -47,7 +47,7 @@ void main() {
 
       expect(find.text('Sorry, this website is blocked.'), findsOneWidget);
       expect(
-        find.textContaining('ClearNet has restricted access'),
+        find.textContaining('${Constants.appName} has restricted access'),
         findsOneWidget,
       );
       expect(find.text('Okay'), findsOneWidget);

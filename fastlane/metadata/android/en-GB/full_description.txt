@@ -5,4 +5,4 @@ Key Features:
 - App Filtering: Blocks chosen restricted applications from executing or launching.
 - Offline Content Filter: Preloaded local JSON domain blocklists intercept queries without relying on remote servers.
 - High-Performance Local VPN: Routes network lookups completely locally inside an on-device VPNService loop.
-- Absolute Privacy: Zero analytics trackers, zero advertisement injection, and absolutely no personal metrics collected.
+- Absolute Privacy: Zero analytics trackers, zero advertisement injection and absolutely no personal metrics collected.

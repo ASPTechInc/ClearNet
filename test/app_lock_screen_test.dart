@@ -28,7 +28,8 @@ void main() {
     Widget createWidgetUnderTest() {
       return MaterialApp(
         routes: {
-          AppRoutes.home: (context) => const Scaffold(body: Text('Home Screen')),
+          AppRoutes.home: (context) =>
+              const Scaffold(body: Text('Home Screen')),
         },
         home: const AppLockScreen(),
       );

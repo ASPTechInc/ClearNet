@@ -33,7 +33,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       FlutterSecureStorage.setMockInitialValues({});
       PackageInfo.setMockInitialValues(
-        appName: 'ClearNet',
+        appName: Constants.appName,
         packageName: 'com.example.clearnet',
         version: '1.0.0',
         buildNumber: '1',
@@ -154,13 +154,14 @@ void main() {
     });
 
     testWidgets(
-      'Clear content dialog opens and clears blocklist & blocked apps on confirm',
+      'Clear content dialog opens and clears blocklist & blocked apps '
+      'on confirm',
       (WidgetTester tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', (ByteData? message) async {
               if (message == null) return null;
               final String key = utf8.decode(message.buffer.asUint8List());
-              if (key.contains('blocklist.json')) {
+              if (key.contains(Constants.blocklistFileName)) {
                 final encoded = json.encode({
                   'domains': ['example.com'],
                   'keywords': ['test'],
@@ -192,7 +193,8 @@ void main() {
         expect(find.text('Clear content'), findsAtLeastNWidgets(1));
         expect(
           find.text(
-            'This will remove all items from blocked websites, keywords, whitelist, and unselect all blocked apps. Do you want to proceed?',
+            'This will remove all items from blocked websites, keywords, '
+            'whitelist and unselect all blocked apps. Do you want to proceed?',
           ),
           findsOneWidget,
         );
@@ -219,7 +221,7 @@ void main() {
             .setMockMessageHandler('flutter/assets', (ByteData? message) async {
               if (message == null) return null;
               final String key = utf8.decode(message.buffer.asUint8List());
-              if (key.contains('blocklist.json')) {
+              if (key.contains(Constants.blocklistFileName)) {
                 final encoded = json.encode({
                   'domains': ['example.com'],
                   'keywords': ['test'],
@@ -251,7 +253,8 @@ void main() {
         expect(find.text('Reset content'), findsAtLeastNWidgets(1));
         expect(
           find.text(
-            'This will reset blocked sites, keywords, and whitelist to default data. Do you want to proceed?',
+            'This will reset blocked sites, keywords and whitelist to '
+            'default data. Do you want to proceed?',
           ),
           findsOneWidget,
         );
@@ -365,7 +368,8 @@ void main() {
 
       expect(find.text('Source code'), findsAtLeastNWidgets(1));
       expect(
-        find.textContaining('ClearNet is free open-source software'),
+        find.textContaining('${Constants.appName} is free open-source '
+        'software'),
         findsOneWidget,
       );
       expect(
@@ -393,8 +397,9 @@ void main() {
       await tester.tap(donateFinder);
       await tester.pumpAndSettle();
 
-      expect(find.text('Support ClearNet'), findsOneWidget);
-      expect(find.textContaining('If you appreciate ClearNet'), findsOneWidget);
+      expect(find.text('Support ${Constants.appName}'), findsOneWidget);
+      expect(find.textContaining('If you appreciate '
+      '${Constants.appName}'), findsOneWidget);
       expect(
         find.text('Support page: ${Constants.buyMeACoffeeUrl}'),
         findsOneWidget,

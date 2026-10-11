@@ -16,8 +16,7 @@ class GuideScreen extends StatefulWidget {
   State<GuideScreen> createState() => _GuideScreenState();
 }
 
-class _GuideScreenState extends State<GuideScreen>
-    with WidgetsBindingObserver {
+class _GuideScreenState extends State<GuideScreen> with WidgetsBindingObserver {
   late Future<GuideData> _guideFuture;
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -41,7 +40,9 @@ class _GuideScreenState extends State<GuideScreen>
   @override
   void dispose() {
     _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(_onPermissionsUpdated);
+    AppTourManager.permissionsCheckNotifier.removeListener(
+      _onPermissionsUpdated,
+    );
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
@@ -64,10 +65,7 @@ class _GuideScreenState extends State<GuideScreen>
       if (!mounted) return;
       await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [
-          _guidePageKey,
-          _guideControlsKey,
-        ],
+        keys: [_guidePageKey, _guideControlsKey],
         tourKey: AppTourManager.guideTourKey,
       );
     });
@@ -197,7 +195,8 @@ class _GuideScreenState extends State<GuideScreen>
                           key: _guidePageKey,
                           title: 'Guide Recommendations',
                           description:
-                              'Swipe or tap Next to read tips, rules, and best practices for preventing bypasses.',
+                              'Swipe or tap Next to read tips, rules and '
+                              'best practices for preventing bypasses.',
                           child: content,
                         );
                       }
@@ -213,7 +212,8 @@ class _GuideScreenState extends State<GuideScreen>
                   key: _guideControlsKey,
                   title: 'Guide Controls',
                   description:
-                      'Use back and next buttons or page indicators to navigate through the guide.',
+                      'Use back and next buttons or page indicators to '
+                      'navigate through the guide.',
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -221,7 +221,8 @@ class _GuideScreenState extends State<GuideScreen>
                     ),
                     child: Row(
                       children: [
-                        // Back Button Layout wrapped in Visibility to prevent horizontal space overflow constraints
+                        // Back Button Layout wrapped in Visibility to 
+                        //prevent horizontal space overflow constraints
                         Visibility(
                           visible: _currentPage > 0,
                           maintainState: true,
@@ -238,7 +239,8 @@ class _GuideScreenState extends State<GuideScreen>
                           ),
                         ),
 
-                        // Flexible wrapper bounds horizontal footprint of progress indicators cleanly
+                        // Flexible wrapper bounds horizontal footprint of 
+                        //progress indicators cleanly
                         Expanded(
                           child: Center(
                             child: SingleChildScrollView(
@@ -257,9 +259,7 @@ class _GuideScreenState extends State<GuideScreen>
                                       color: _currentPage == index
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.primary
-                                              .withValues(
-                                              alpha: 0.2,
-                                            ),
+                                                .withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                   );
@@ -273,7 +273,9 @@ class _GuideScreenState extends State<GuideScreen>
                         TextButton(
                           onPressed: () => _nextItem(pages.length),
                           child: Text(
-                            _currentPage == pages.length - 1 ? 'Got it' : 'Next',
+                            _currentPage == pages.length - 1
+                                ? 'Got it'
+                                : 'Next',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),

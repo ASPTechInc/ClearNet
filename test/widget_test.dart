@@ -23,7 +23,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     PackageInfo.setMockInitialValues(
-      appName: 'ClearNet',
+      appName: Constants.appName,
       packageName: 'com.example.clearnet',
       version: '1.0.0',
       buildNumber: '1',
@@ -68,7 +68,7 @@ void main() {
 
     // Verify that the app starts. It should land on ProtectionScreen which has
     // the app name in the AppBar.
-    expect(find.text('ClearNet'), findsOneWidget);
+    expect(find.text(Constants.appName), findsOneWidget);
 
     // Clear pending timers to avoid test failure
     await tester.pump(const Duration(seconds: 2));

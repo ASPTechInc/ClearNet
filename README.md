@@ -34,28 +34,28 @@
 ## Overview
 
 ClearNet is a parental control app built with Flutter and Android system services.
-It is designed to protect individuals by blocking harmful content, restricting apps, and preventing unauthorised removal.
+It is designed to protect individuals by blocking harmful content, restricting apps and preventing unauthorised removal.
 
 ---
 
 ## Features
 
-|     | Feature               | Description                                                                                                                                                                                        |
-| --- | :-------------------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ✅  | **Uninstall Protection with PIN**    | The app registers as a Device Admin that cannot be removed without entering the parent-set PIN.                                                                                                   |
-| ✅  | **App Restriction**     | Blocks selected apps from being launched on the device.                                                                                                                                            |
-| ✅  | **Website Blocking**  | - Built-in local VPN service filters network traffic. - Preloaded blocklist of harmful adult domains stored completely offline. - Parents can add custom domains to the blocklist. |
-| ✅  | **Keyword Filtering** | Blocks websites and content matching parent-defined custom keywords. |
-| ✅  | **SafeSearch Enforcement** | Automatically redirects Google, Bing, and YouTube queries to their respective SafeSearch IPs for family-safe browsing. |
-| ✅  | **Blocklist Import & Export** | Import and export custom domain and keyword lists as `blocklist.json` for easy backup and restore. |
-| ✅  | **Custom DNS Configuration** | Specify a custom upstream DNS server (e.g., Quad9) for network resolution. |
-| ✅  | **App Disguise Mode** | Disguise ClearNet as a Calculator or Notes app icon/name on the home screen. |
-| ✅  | **Settings PIN Lock** | Secure app settings behind a secondary PIN to prevent unauthorised modifications. |
-| ✅  | **Disable Confirmation Challenge** | Requires solving a security confirmation task when attempting to pause or disable blocking. |
-| ✅  | **Activity Statistics** | Displays real-time daily, weekly, and monthly statistics for blocked websites and blocked apps. |
-| ✅  | **Theme Customisation** | Built-in Light, Dark, and System theme mode options. |
-| ✅  | **Offline & Secure**        | - Ships with a default blocklist stored in local assets. - Works without internet access. - No external servers, no data collection.                                                               |
-| ✅  | **App Updates & Transparency** | Built-in release updater, direct access to the Changelog, GitHub source code, and support options within settings. |
+|     | Feature                            | Description                                                                                                                                                                        |
+| --- | :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅  | **Uninstall Protection with PIN**  | The app registers as a Device Admin that cannot be removed without entering the parent-set PIN.                                                                                    |
+| ✅  | **App Restriction**                | Blocks selected apps from being launched on the device.                                                                                                                            |
+| ✅  | **Website Blocking**               | - Built-in local VPN service filters network traffic. - Preloaded blocklist of harmful adult domains stored completely offline. - Parents can add custom domains to the blocklist. |
+| ✅  | **Keyword Filtering**              | Blocks websites and content matching parent-defined custom keywords.                                                                                                               |
+| ✅  | **SafeSearch Enforcement**         | Automatically redirects Google, Bing and YouTube queries to their respective SafeSearch IPs for family-safe browsing.                                                              |
+| ✅  | **Blocklist Import & Export**      | Import and export custom domain and keyword lists as `blocklist.json` for easy backup and restore.                                                                                 |
+| ✅  | **Custom DNS Configuration**       | Specify a custom upstream DNS server (e.g., Quad9) for network resolution.                                                                                                         |
+| ✅  | **App Disguise Mode**              | Disguise ClearNet as a Calculator or Notes app icon/name on the home screen.                                                                                                       |
+| ✅  | **Settings PIN Lock**              | Secure app settings behind a secondary PIN to prevent unauthorised modifications.                                                                                                  |
+| ✅  | **Disable Confirmation Challenge** | Requires solving a security confirmation task when attempting to pause or disable blocking.                                                                                        |
+| ✅  | **Activity Statistics**            | Displays real-time daily, weekly and monthly statistics for blocked websites and blocked apps.                                                                                     |
+| ✅  | **Theme Customisation**            | Built-in Light, Dark and System theme mode options.                                                                                                                                |
+| ✅  | **Offline & Secure**               | - Ships with a default blocklist stored in local assets. - Works without internet access. - No external servers, no data collection.                                               |
+| ✅  | **App Updates & Transparency**     | Built-in release updater, direct access to the Changelog, GitHub source code and support options within settings.                                                                  |
 
 ---
 
@@ -63,38 +63,38 @@ It is designed to protect individuals by blocking harmful content, restricting a
 
 ### Dark mode
 
-| **Start screen** | **Game screen** | **Leaderboard** | **Settings (1)** |
-| :---: | :---: | :---: | :---: |
+|                         **Start screen**                          |                         **Game screen**                          |                             **Leaderboard**                             |                           **Settings (1)**                            |
+| :---------------------------------------------------------------: | :--------------------------------------------------------------: | :---------------------------------------------------------------------: | :-------------------------------------------------------------------: |
 | <img src="assets/screenshots/dark-theme/start-screen-dark.png" /> | <img src="assets/screenshots/dark-theme/game-screen-dark.png" /> | <img src="assets/screenshots/dark-theme/leaderboard-screen-dark.png" /> | <img src="assets/screenshots/dark-theme/settings-screen1-dark.png" /> |
 
-| **Settings (2)** | **Settings (3)** | **How to play** | **How to answer** |
-| :---: | :---: | :---: | :---: |
+|                           **Settings (2)**                            |                           **Settings (3)**                            |                                 **How to play**                                 |                                 **How to answer**                                 |
+| :-------------------------------------------------------------------: | :-------------------------------------------------------------------: | :-----------------------------------------------------------------------------: | :-------------------------------------------------------------------------------: |
 | <img src="assets/screenshots/dark-theme/settings-screen2-dark.png" /> | <img src="assets/screenshots/dark-theme/settings-screen3-dark.png" /> | <img src="assets/screenshots/dark-theme/how-to-play-guide-dialogue-dark.png" /> | <img src="assets/screenshots/dark-theme/how-to-answer-guide-dialogue-dark.png" /> |
 
-| **Changelog** | **App updater** | **Build info** | **Support** |
-| :---: | :---: | :---: | :---: |
+|                              **Changelog**                              |                              **App updater**                              |                                **Build info**                                |                                **Support**                                |
+| :---------------------------------------------------------------------: | :-----------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :-----------------------------------------------------------------------: |
 | <img src="assets/screenshots/dark-theme/changelog-dialogue-dark.png" /> | <img src="assets/screenshots/dark-theme/app-updater-dialogue-dark.png" /> | <img src="assets/screenshots/dark-theme/app-build-info-dialogue-dark.png" /> | <img src="assets/screenshots/dark-theme/app-support-dialogue-dark.png" /> |
 
-| **Reset progress** |
-| :---: |
+|                                    **Reset progress**                                     |
+| :---------------------------------------------------------------------------------------: |
 | <img src="assets/screenshots/dark-theme/reset-progress-dialogue-dark.png" width="300"  /> |
 
 ### Light mode
 
-| **Start screen** | **Game screen** | **Leaderboard** | **Settings (1)** |
-| :---: | :---: | :---: | :---: |
+|                          **Start screen**                           |                          **Game screen**                           |                              **Leaderboard**                              |                            **Settings (1)**                             |
+| :-----------------------------------------------------------------: | :----------------------------------------------------------------: | :-----------------------------------------------------------------------: | :---------------------------------------------------------------------: |
 | <img src="assets/screenshots/light-theme/start-screen-light.png" /> | <img src="assets/screenshots/light-theme/game-screen-light.png" /> | <img src="assets/screenshots/light-theme/leaderboard-screen-light.png" /> | <img src="assets/screenshots/light-theme/settings-screen1-light.png" /> |
 
-| **Settings (2)** | **Settings (3)** | **How to play** | **How to answer** |
-| :---: | :---: | :---: | :---: |
+|                            **Settings (2)**                             |                            **Settings (3)**                             |                                  **How to play**                                  |                                  **How to answer**                                  |
+| :---------------------------------------------------------------------: | :---------------------------------------------------------------------: | :-------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------: |
 | <img src="assets/screenshots/light-theme/settings-screen2-light.png" /> | <img src="assets/screenshots/light-theme/settings-screen3-light.png" /> | <img src="assets/screenshots/light-theme/how-to-play-guide-dialogue-light.png" /> | <img src="assets/screenshots/light-theme/how-to-answer-guide-dialogue-light.png" /> |
 
-| **Changelog** | **App updater** | **Build info** | **Support** |
-| :---: | :---: | :---: | :---: |
+|                               **Changelog**                               |                               **App updater**                               |                                 **Build info**                                 |                                 **Support**                                 |
+| :-----------------------------------------------------------------------: | :-------------------------------------------------------------------------: | :----------------------------------------------------------------------------: | :-------------------------------------------------------------------------: |
 | <img src="assets/screenshots/light-theme/changelog-dialogue-light.png" /> | <img src="assets/screenshots/light-theme/app-updater-dialogue-light.png" /> | <img src="assets/screenshots/light-theme/app-build-info-dialogue-light.png" /> | <img src="assets/screenshots/light-theme/app-support-dialogue-light.png" /> |
 
-| **Reset progress** |
-| :---: |
+|                                     **Reset progress**                                     |
+| :----------------------------------------------------------------------------------------: |
 | <img src="assets/screenshots/light-theme/reset-progress-dialogue-light.png" width="300" /> |
 
 ---
@@ -154,9 +154,11 @@ echo 'export CHROME_EXECUTABLE="/usr/bin/google-chrome"' >> ~/.bashrc
 source ~/.bashrc
 
 # Navigate to the Android SDK tools directory
+
 cd ~/Android/Sdk/cmdline-tools/latest/bin/
 
 # Accept licenses using the updated tool structure
+
 ./sdkmanager --licenses
 
 ---
@@ -174,6 +176,15 @@ flutter test
 ```bash
 dart format .
 flutter analyze
+
+# Preview proposed changes
+dart fix --dry-run
+
+# Apply lint
+dart fix --apply
+
+# Sort package imports
+dart run import_sorter:main
 ```
 
 ---
@@ -201,13 +212,13 @@ This project is licensed under the [MIT Licence](LICENSE).
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code style, testing, and pull requests.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code style, testing and pull requests.
 
 ---
 
 ## Developer notes
 
-For a detailed breakdown of technical workflows, local testing guides, and setup steps, see the [DEVELOPER_NOTES.md](docs/DEVELOPER_NOTES.md) file.
+For a detailed breakdown of technical workflows, local testing guides and setup steps, see the [DEVELOPER_NOTES.md](docs/DEVELOPER_NOTES.md) file.
 
 ---
 

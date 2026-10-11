@@ -1,6 +1,6 @@
 # CI means Continuous Integration.
 # This workflow handles the Flutter/Dart build pipeline, running
-# format checks, static analysis, unit tests, and building the Android APK.
+# format checks, static analysis, unit tests and building the Android APK.
 name: Flutter CI
 
 on:

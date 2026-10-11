@@ -66,7 +66,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Blocking paused'), findsOneWidget);
-      expect(find.text('ClearNet is idle'), findsOneWidget);
+      expect(find.text('${Constants.appName} is idle'), findsOneWidget);
     });
 
     testWidgets('displays blocking active if preference is true', (
@@ -77,7 +77,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Blocking active'), findsOneWidget);
-      expect(find.text('ClearNet is guarding'), findsOneWidget);
+      expect(find.text('${Constants.appName} is guarding'), findsOneWidget);
     });
 
     testWidgets('toggling switch updates preference and calls VPN controller', (

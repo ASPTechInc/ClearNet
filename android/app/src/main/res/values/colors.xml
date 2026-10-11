@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / Material colours for Light theme -->
+    <color name="primary">#B71C1C</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#FFDAD6</color>
+    <color name="on_primary_container">#410002</color>
+
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F2F4F7</color>
+
+    <color name="text_primary">#1C1B1F</color>
+    <color name="text_secondary">#49454F</color>
+    <color name="text_hint">#79747E</color>
+
+    <color name="input_background">#FFFFFF</color>
+    <color name="input_border">#D0D5DD</color>
+    <color name="input_border_focused">#B71C1C</color>
+
+    <color name="error">#D32F2F</color>
+    <color name="error_bg">#FFEBEE</color>
+</resources>
