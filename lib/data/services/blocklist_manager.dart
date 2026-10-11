@@ -28,7 +28,7 @@ class BlocklistManager {
 
   static Future<File> _getLocalFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File('${directory.path}/blocklist.json');
+    return File('${directory.path}/${Constants.blocklistFileName}');
   }
 
   /// Ensures SharedPreferences is in sync with blocklist.json if it exists
@@ -65,7 +65,8 @@ class BlocklistManager {
       }
     }
 
-    // If whitelist key was never set (e.g., upgraded from older app version), seed from assets
+    // If whitelist key was never set (e.g., upgraded from older app version), 
+    //seed from assets
     if (savedWhitelist == null &&
         (await _prefs.getStringList(_userWhitelistKey) ?? []).isEmpty) {
       final assetData = await _loadAssetData();
@@ -285,7 +286,8 @@ class BlocklistManager {
     final userWhitelist = await loadUserWhitelist();
 
     final savedFinal = await _prefs.getStringList(_finalDomainsKey);
-    // If user explicitly cleared content (all user lists are empty and final list was saved as empty), preserve empty
+    // If user explicitly cleared content (all user lists are empty and 
+    //final list was saved as empty), preserve empty
     if (userDomains.isEmpty &&
         userKeywords.isEmpty &&
         userWhitelist.isEmpty &&
@@ -307,7 +309,8 @@ class BlocklistManager {
     await _prefs.setStringList(_finalWhitelistKey, allWhitelist.toList());
   }
 
-  /// Reset user domains, keywords, and whitelist to default data from asset blocklist
+  /// Reset user domains, keywords and whitelist to default data from asset 
+  /// blocklist
   static Future<void> resetToDefault() async {
     final assetData = await _loadAssetData();
     final domains = assetData['domains'] ?? [];
@@ -331,7 +334,7 @@ class BlocklistManager {
     unawaited(_saveToFile());
   }
 
-  /// Clear all user domains, keywords, whitelist, and final blocklists
+  /// Clear all user domains, keywords, whitelist and final blocklists
   static Future<void> clearAll() async {
     await _prefs.setStringList(_userDomainsKey, []);
     await _prefs.setStringList(_userKeywordsKey, []);
@@ -384,7 +387,8 @@ class BlocklistManager {
       final List<String> keywords = List<String>.from(data['keywords'] ?? []);
       List<String> whitelist = List<String>.from(data['whitelist'] ?? []);
 
-      // If imported JSON format is missing 'whitelist' key (from prior app version), fallback to asset default
+      // If imported JSON format is missing 'whitelist' key (from prior app 
+      //version), fallback to asset default
       if (!data.containsKey('whitelist')) {
         final assetData = await _loadAssetData();
         whitelist = assetData['whitelist'] ?? [];

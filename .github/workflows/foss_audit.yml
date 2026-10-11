@@ -1,3 +1,5 @@
+# This workflow is currently disabled in GitHub Actions
+#
 name: FOSS Compliance Dependency Audit
 
 on:

@@ -53,7 +53,7 @@ class AppBlockService : AccessibilityService() {
 
             Log.d(TAG, "Foreground app changed to: $packageName")
             
-            // Sync current lists of blacklisted sites, keywords, and whitelisted sites
+            // Sync current lists of blacklisted sites, keywords and whitelisted sites
             this.blockedSites = data.blockedSites.toMutableSet()
             this.blockedKeywords = data.blockedKeywords.toMutableSet()
             this.whitelistedSites = data.whitelistedSites.toMutableSet()

@@ -4,12 +4,12 @@
         {
             "type": "intro",
             "title": "Take Control of Your Digital Habits",
-            "description": "ClearNet helps you block adult content, restrict distracting apps, and maintain a safe digital environment."
+            "description": "ClearNet helps you block adult content, restrict distracting apps and maintain a safe digital environment."
         },
         {
             "type": "do",
             "title": "Enable Local VPN Protection",
-            "description": "Keep local VPN active to block adult websites, dangerous domains, and enforce SafeSearch."
+            "description": "Keep local VPN active to block adult websites, dangerous domains and enforce SafeSearch."
         },
         {
             "type": "do",
@@ -24,7 +24,7 @@
         {
             "type": "do",
             "title": "Customise Your Blocklist",
-            "description": "Add specific websites, keywords, and distracting apps to keep your blocklist effective."
+            "description": "Add specific websites, keywords and distracting apps to keep your blocklist effective."
         },
         {
             "type": "dont",
@@ -69,7 +69,7 @@
         {
             "type": "tip",
             "title": "Build Positive Offline Habits",
-            "description": "Replace blocked screen time with physical activity, hobbies, and social connections."
+            "description": "Replace blocked screen time with physical activity, hobbies and social connections."
         }
     ]
 }

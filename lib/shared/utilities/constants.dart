@@ -1,11 +1,17 @@
+// Project imports:
+import 'package:clearnet/data/models/dns_preset.dart';
+
 class Constants {
   static const String appName = 'ClearNet';
+  static const String appCalculatorDisguiseName = 'Calculator';
+  static const String appNotesDisguiseName = 'Notes';
   static const String blocklistKey = 'blocked_sites';
   static const String keywordsKey = 'blocked_keywords';
   static const String whitelistKey = 'whitelisted_sites';
   static const String vpnStatusKey = 'vpn_status';
   static const String methodChannelName = 'app_control/channel';
   static const String blocklistAsset = 'assets/data/blocklist.json';
+  static const String blocklistFileName = 'blocklist.json';
   static const String themeModeKey = 'theme_mode';
   static const String blockedAppsKey = 'blocked_apps';
   static const String blockedWebsitesCountKey = 'blocked_websites_count';
@@ -36,4 +42,27 @@ class Constants {
       'https://api.github.com/repos/asptechinc/clearnet/releases/latest';
 
   static const String buyMeACoffeeUrl = 'https://buymeacoffee.com/asptechinc';
+
+  static const List<DnsPreset> dnsPresets = [
+    DnsPreset(id: 'default', label: 'Default (FOSS Cluster)', ip: ''),
+    DnsPreset(id: '9.9.9.9', label: 'Quad9 (9.9.9.9)', ip: '9.9.9.9'),
+    DnsPreset(
+      id: '194.242.2.14',
+      label: 'Mullvad DNS (194.242.2.14)',
+      ip: '194.242.2.14',
+    ),
+    DnsPreset(
+      id: '94.140.14.14',
+      label: 'AdGuard DNS (94.140.14.14)',
+      ip: '94.140.14.14',
+    ),
+    DnsPreset(
+      id: '91.239.100.100',
+      label: 'UncensoredDNS (91.239.100.100)',
+      ip: '91.239.100.100',
+    ),
+    DnsPreset(id: '1.1.1.1', label: 'Cloudflare (1.1.1.1)', ip: '1.1.1.1'),
+    DnsPreset(id: '8.8.8.8', label: 'Google DNS (8.8.8.8)', ip: '8.8.8.8'),
+    DnsPreset(id: 'custom', label: 'Custom IP Address', ip: ''),
+  ];
 }

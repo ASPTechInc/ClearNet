@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / Material colours for Dark theme -->
+    <color name="primary">#E57373</color>
+    <color name="on_primary">#1C1B1F</color>
+    <color name="primary_container">#8C1D18</color>
+    <color name="on_primary_container">#FFDAD6</color>
+
+    <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="surface_variant">#2A2A2A</color>
+
+    <color name="text_primary">#E6E1E5</color>
+    <color name="text_secondary">#CAC4D0</color>
+    <color name="text_hint">#938F96</color>
+
+    <color name="input_background">#1E1E1E</color>
+    <color name="input_border">#444444</color>
+    <color name="input_border_focused">#E57373</color>
+
+    <color name="error">#EF5350</color>
+    <color name="error_bg">#3E2723</color>
+</resources>

@@ -13,6 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
+import 'package:clearnet/shared/utilities/constants.dart';
 
 class BlockedSitesScreen extends StatefulWidget {
   const BlockedSitesScreen({super.key});
@@ -52,7 +53,9 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
   @override
   void dispose() {
     _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(_onPermissionsUpdated);
+    AppTourManager.permissionsCheckNotifier.removeListener(
+      _onPermissionsUpdated,
+    );
     WidgetsBinding.instance.removeObserver(this);
     _domainController.dispose();
     _keywordController.dispose();
@@ -77,12 +80,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
       if (!mounted) return;
       await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [
-          _importExportKey,
-          _tabBarKey,
-          _addInputKey,
-          _addButtonKey,
-        ],
+        keys: [_importExportKey, _tabBarKey, _addInputKey, _addButtonKey],
         tourKey: AppTourManager.contentTourKey,
       );
     });
@@ -108,7 +106,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'This domain is already in the whitelist. Please remove it from the whitelist first.',
+            'This domain is already in the whitelist. Please remove it '
+            'from the whitelist first.',
           ),
         ),
       );
@@ -130,7 +129,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'This keyword is already in the whitelist. Please remove it from the whitelist first.',
+            'This keyword is already in the whitelist. Please remove it from '
+            'the whitelist first.',
           ),
         ),
       );
@@ -155,7 +155,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'This site is already in blocked domains or keywords. Please remove it from there first.',
+            'This site is already in blocked domains or keywords. Please '
+            'remove it from there first.',
           ),
         ),
       );
@@ -253,7 +254,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'This domain is already in the whitelist. Please remove it from there first.',
+                              'This domain is already in the whitelist. '
+                              'Please remove it from there first.',
                             ),
                           ),
                         );
@@ -267,7 +269,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'This keyword is already in the whitelist. Please remove it from there first.',
+                              'This keyword is already in the whitelist. '
+                              'Please remove it from there first.',
                             ),
                           ),
                         );
@@ -287,7 +290,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'This site is already in blocked domains or keywords. Please remove it from there first.',
+                              'This site is already in blocked domains or '
+                              'keywords. Please remove it from there first.',
                             ),
                           ),
                         );
@@ -340,7 +344,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
       final jsonString = await BlocklistManager.exportToJson();
       final result = await FilePicker.saveFile(
         dialogTitle: 'Export Blocklist',
-        fileName: 'blocklist.json',
+        fileName: Constants.blocklistFileName,
         bytes: utf8.encode(jsonString),
       );
 
@@ -363,7 +367,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Blocked content'),
@@ -372,7 +376,8 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
               key: _importExportKey,
               title: 'Import & Export',
               description:
-                  'Import custom blocklist files or export your current configuration to JSON.',
+                  'Import a custom blocklist file or export your current '
+                  'configuration to JSON.',
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -380,13 +385,13 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
                     key: const Key('import_button'),
                     icon: const Icon(Icons.file_upload),
                     onPressed: _importFromFile,
-                    tooltip: 'Import blocklist.json',
+                    tooltip: 'Import ${Constants.blocklistFileName}',
                   ),
                   IconButton(
                     key: const Key('export_button'),
                     icon: const Icon(Icons.file_download),
                     onPressed: _exportToFile,
-                    tooltip: 'Export blocklist.json',
+                    tooltip: 'Export ${Constants.blocklistFileName}',
                   ),
                 ],
               ),
@@ -396,14 +401,22 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
             preferredSize: const Size.fromHeight(kTextTabBarHeight),
             child: AppTourManager.appTourItem(
               key: _tabBarKey,
-              title: 'Filter Categories',
+              title: 'Filter categories',
               description:
-                  'Switch between blocked Domains, Keywords, and Whitelisted sites.',
+                  'Switch between blocked domains (or websites), keywords, '
+                  'whitelisted websites and applications.',
               child: const TabBar(
                 tabs: [
                   Tab(text: 'Domains', icon: Icon(Icons.language)),
                   Tab(text: 'Keywords', icon: Icon(Icons.text_format)),
-                  Tab(text: 'Whitelist', icon: Icon(Icons.check_circle_outline)),
+                  Tab(
+                    text: 'Whitelist',
+                    icon: Icon(Icons.check_circle_outline),
+                  ),
+                   Tab(
+                    text: 'Apps',
+                    icon: Icon(Icons.apps),
+                  ),
                 ],
               ),
             ),
@@ -414,6 +427,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
             _buildDomainList(),
             _buildKeywordList(),
             _buildWhitelistList(),
+            _buildAppList()
           ],
         ),
       ),
@@ -430,9 +444,10 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
               Expanded(
                 child: AppTourManager.appTourItem(
                   key: _addInputKey,
-                  title: 'Add Custom Rule',
+                  title: 'Add custom rule',
                   description:
-                      'Type a domain, keyword, or whitelisted URL to add it to your custom rules.',
+                      'Type a domain, keyword or whitelisted website URL to '
+                      'add it to your custom rules.',
                   child: TextField(
                     key: const Key('domain_input'),
                     controller: _domainController,
@@ -446,9 +461,10 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
               const SizedBox(width: 8),
               AppTourManager.appTourItem(
                 key: _addButtonKey,
-                title: 'Save Rule',
+                title: 'Save rule',
                 description:
-                    'Tap to add the entered item to your blocklist or whitelist.',
+                    'Tap to add the entered item to your blocklist or '
+                    'whitelist.',
                 child: IconButton(
                   key: const Key('add_domain_button'),
                   icon: const Icon(
@@ -609,6 +625,14 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
     );
   }
 
+  Widget _buildAppList() {
+    return Center(
+      child: Text(
+        'App list goes here',
+        style: const TextStyle(fontSize: 16, color: Colors.grey),
+      ),
+    );
+  }
   Widget _buildNoDataView(String message) {
     return Center(
       child: Column(

@@ -59,14 +59,14 @@ class VpnController {
   }
 
   /// Check if Ignoring Battery Optimisations
-  static Future<bool> isIgnoringBatteryOptimizations() async {
+  static Future<bool> isIgnoringBatteryOptimisations() async {
     return await platform.invokeMethod('isIgnoringBatteryOptimizations') ??
         false;
   }
 
   /// Request Ignore Battery Optimisations
   static Future<void> requestIgnoreBatteryOptimisations() async {
-    await platform.invokeMethod('requestIgnoreBatteryOptimisations');
+    await platform.invokeMethod('requestIgnoreBatteryOptimizations');
   }
 
   /// Show the native confirmation dialogue to disable blocking

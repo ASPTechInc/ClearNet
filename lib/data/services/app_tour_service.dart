@@ -8,7 +8,8 @@ import 'package:showcaseview/showcaseview.dart';
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 
-/// A central manager for handling app-wide feature showcase tours using [ShowcaseView].
+/// A central manager for handling app-wide feature showcase tours 
+/// using [ShowcaseView].
 class AppTourManager {
   AppTourManager._();
 
@@ -28,7 +29,8 @@ class AppTourManager {
   /// A notifier triggered when permissions check completes or updates.
   static final ValueNotifier<int> permissionsCheckNotifier = ValueNotifier(0);
 
-  /// Triggers a notification so listening screens re-evaluate if the app tour can start.
+  /// Triggers a notification so listening screens re-evaluate if the app tour 
+  /// can start.
   static void notifyPermissionsUpdated() {
     permissionsCheckNotifier.value++;
     debugPrint('AppTourManager: permissions updated');
@@ -48,7 +50,8 @@ class AppTourManager {
   }
 
   /// Initialises and registers the global configuration for [ShowcaseView].
-  /// Call this during app startup or before displaying the main UI (e.g. in [main.dart] on [BottomNavBar]).
+  /// Call this during app startup or before displaying the main UI 
+  /// (e.g. in [main.dart] on [BottomNavBar]).
   static void initialiseAppTour({
     List<GlobalKey>? hideFloatingActionForKeys,
     VoidCallback? onDismiss,
@@ -123,7 +126,8 @@ class AppTourManager {
   }
 
   /// Wraps any given [child] widget with a [Showcase] spotlight.
-  /// Falls back to rendering [child] directly when ShowcaseView is not registered
+  /// Falls back to rendering [child] directly when ShowcaseView is not 
+  /// registered
   /// (e.g. in unit/widget tests that don't set up the showcase).
   static Widget appTourItem({
     required GlobalKey key,
@@ -191,9 +195,10 @@ class AppTourManager {
   /// 1. The user hasn't completed/seen the tour yet (checked via [tourKey]).
   /// 2. The global app-tour flag has not been set (prevents re-showing after
   ///    a one-time global dismissal, e.g. during onboarding).
-  /// 3. Safe Browsing / Accessibility Service is enabled.
+  /// 3. Safe browsing or Accessibility service is enabled.
   /// 4. Battery Optimisation is disabled (ignored).
-  /// 5. No modal dialog or overlay route is currently visible on top of [context].
+  /// 5. No modal dialog or overlay route is currently visible on top of 
+  ///    [context].
   static Future<bool> startAppTourIfReady({
     required BuildContext context,
     required List<GlobalKey> keys,
@@ -245,7 +250,8 @@ class AppTourManager {
     }
   }
 
-  /// Resets the showcase tour state so it can be played again from Settings/Help.
+  /// Resets the showcase tour state so it can be played again from 
+  /// Settings/Help.
   static Future<void> resetAppTourState() async {
     final prefs = SharedPreferencesAsync();
     await prefs.remove(_appTourCompletedKey);

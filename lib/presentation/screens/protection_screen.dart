@@ -53,7 +53,9 @@ class _ProtectionScreenState extends State<ProtectionScreen>
   @override
   void dispose() {
     _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(_onPermissionsUpdated);
+    AppTourManager.permissionsCheckNotifier.removeListener(
+      _onPermissionsUpdated,
+    );
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -75,10 +77,7 @@ class _ProtectionScreenState extends State<ProtectionScreen>
       if (!mounted) return;
       await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [
-          _protectionSwitchKey,
-          _activityCardKey,
-        ],
+        keys: [_protectionSwitchKey, _activityCardKey],
         tourKey: AppTourManager.protectionTourKey,
       );
     });
@@ -117,7 +116,7 @@ class _ProtectionScreenState extends State<ProtectionScreen>
       }
 
       final isBatteryOptimised =
-          await VpnController.isIgnoringBatteryOptimizations();
+          await VpnController.isIgnoringBatteryOptimisations();
       if (!isBatteryOptimised) {
         if (!mounted) return;
         final granted = await _showBatteryOptimisationDialog();
@@ -158,7 +157,8 @@ class _ProtectionScreenState extends State<ProtectionScreen>
       builder: (context) => PermissionRequirementDialogue(
         title: 'Enable Safe Browsing',
         description:
-            'To enable blocking, you must first enable the Safe Browsing service in your device settings.',
+            'To enable blocking, you must first enable the Safe browsing '
+            'service in your device settings.',
         initialButtonText: 'Go to Settings',
         clickedButtonText: 'Confirm enabling',
         exitButtonText: 'Cancel',
@@ -170,7 +170,8 @@ class _ProtectionScreenState extends State<ProtectionScreen>
         },
         onExitPressed: () => Navigator.pop(context, false),
         notEnabledMessage:
-            'Safe Browsing Service is not enabled yet. Please enable it in Accessibility settings.',
+            'Safe Browsing Service is not enabled yet. Please enable it in '
+            'Accessibility settings.',
       ),
     );
     return result ?? false;
@@ -183,7 +184,9 @@ class _ProtectionScreenState extends State<ProtectionScreen>
       builder: (context) => PermissionRequirementDialogue(
         title: 'Battery performance',
         description:
-            'For the VPN and Website Blocking to work reliably, battery optimisation has to be disabled for ClearNet.',
+            'Battery optimisation has to be disabled for '
+            '${Constants.appName} in order for the VPN and website '
+            'blocking to work reliably.',
         initialButtonText: 'Disable optimisation',
         clickedButtonText: 'Confirm disabling',
         exitButtonText: 'Cancel',
@@ -191,11 +194,12 @@ class _ProtectionScreenState extends State<ProtectionScreen>
           await VpnController.requestIgnoreBatteryOptimisations();
         },
         onCheckPermission: () async {
-          return VpnController.isIgnoringBatteryOptimizations();
+          return VpnController.isIgnoringBatteryOptimisations();
         },
         onExitPressed: () => Navigator.pop(context, false),
         notEnabledMessage:
-            'Battery optimisation is still active for ClearNet. Please allow ignoring battery optimisation.',
+            'Battery optimisation is still active for ${Constants.appName}. '
+            'Please allow ignoring battery optimisation.',
       ),
     );
     return result ?? false;
@@ -263,7 +267,9 @@ class _ProtectionScreenState extends State<ProtectionScreen>
                     key: _activityCardKey,
                     title: 'Daily blocking statistics',
                     description:
-                        'View real-time daily statistics of blocked websites and apps. The weekly and monthly statistics are also available.',
+                        'View real-time daily statistics of blocked '
+                        'websites and apps. The weekly and monthly '
+                        'statistics are also available.',
                     child: _buildActivityCard(),
                   ),
                   const SizedBox(height: 24),
@@ -275,8 +281,8 @@ class _ProtectionScreenState extends State<ProtectionScreen>
                   const SizedBox(height: 24),
                   Text(
                     _isBlockingEnabled
-                        ? 'ClearNet is guarding'
-                        : 'ClearNet is idle',
+                        ? '${Constants.appName} is guarding'
+                        : '${Constants.appName} is idle',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w300,

@@ -3,10 +3,10 @@ Initial release of ClearNet FOSS!
 - Uninstall protection via safe Device Admin rules.
 - Offline custom domain & keyword website blocklist filtering.
 - Local VPNService intercepts traffic completely offline.
-- SafeSearch enforcement for Google, Bing, and YouTube.
+- SafeSearch enforcement for Google, Bing and YouTube.
 - Blocklist JSON import/export & custom DNS support.
 - App Disguise Mode (Calculator/Notes) & Settings PIN lock.
 - Interactive disable confirmation security challenge.
 - Activity statistics for blocked websites and apps.
 - Dark/Light theme modes and in-app update checker.
-- Privacy-focused: no remote cloud accounts, trackers, or ads.
+- Privacy-focused: no remote cloud accounts, trackers or ads.

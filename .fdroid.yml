@@ -8,9 +8,9 @@ IssueTracker: https://github.com/asptechinc/clearnet/issues
 Changelog: https://github.com/asptechinc/clearnet/blob/main/CHANGELOG.md
 
 AutoName: ClearNet
-Summary: Simple, fast, and secure web browser with built-in ad blocker
+Summary: Simple, fast and secure web browser with built-in ad blocker
 Description: |-
-  ClearNet is a simple, fast, and secure web browser with built-in ad blocker
+  ClearNet is a simple, fast and secure web browser with built-in ad blocker
   and privacy features.
 
   Features:
