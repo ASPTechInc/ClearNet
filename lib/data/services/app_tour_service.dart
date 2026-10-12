@@ -184,15 +184,27 @@ class AppTourManager {
   }
 
   /// Starts the showcase walkthrough for the provided list of [keys].
-  static void startAppTour(List<GlobalKey> keys) {
+  static void startAppTour(
+    List<GlobalKey> keys, {
+    String? tourKey,
+    VoidCallback? onFinish,
+  }) {
     if (keys.isEmpty) return;
     ensureRegistration();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final showcase = ShowcaseView.get();
       if (showcase.isShowcaseRunning || !keys.every(showcase.isTargetRendered)) {
         return;
       }
+      if (onFinish != null) {
+        showcase.removeOnFinishCallback(onFinish);
+        showcase.addOnFinishCallback(onFinish);
+      }
       showcase.startShowCase(keys);
+      if (tourKey != null) {
+        final prefs = SharedPreferencesAsync();
+        await prefs.setBool(tourKey, true);
+      }
     });
   }
 
@@ -208,6 +220,7 @@ class AppTourManager {
     required BuildContext context,
     required List<GlobalKey> keys,
     String? tourKey,
+    VoidCallback? onFinish,
   }) async {
     ensureRegistration();
     final keyToUse = tourKey ?? _appTourCompletedKey;
@@ -243,7 +256,12 @@ class AppTourManager {
         if (context.mounted) {
           final recheck = ShowcaseView.get();
           if (!recheck.isShowcaseRunning && keys.every(recheck.isTargetRendered)) {
+            if (onFinish != null) {
+              recheck.removeOnFinishCallback(onFinish);
+              recheck.addOnFinishCallback(onFinish);
+            }
             recheck.startShowCase(keys, delay: const Duration(milliseconds: 150));
+            prefs.setBool(keyToUse, true);
           }
         }
       });
@@ -251,7 +269,11 @@ class AppTourManager {
     }
 
     // All conditions satisfied: trigger app tour
-    startAppTour(keys);
+    if (onFinish != null) {
+      showcaseView.removeOnFinishCallback(onFinish);
+      showcaseView.addOnFinishCallback(onFinish);
+    }
+    showcaseView.startShowCase(keys);
     await prefs.setBool(keyToUse, true);
     return true;
   }
