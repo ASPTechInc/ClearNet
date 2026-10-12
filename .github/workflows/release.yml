@@ -55,6 +55,7 @@ jobs:
             exit 1
           fi
 
+      # Build/release steps
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
@@ -76,7 +77,7 @@ jobs:
           VERSION=$(grep "^version: " pubspec.yaml | sed 's/version: //' | tr -d ' ' | cut -d'+' -f1)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "$VERSION" > version.txt
-          echo "Extracted Version: $VERSION"
+          echo "Extracted version: $VERSION"
 
       - name: Prepare Android signing
         shell: bash
@@ -148,19 +149,23 @@ jobs:
             echo "::error::Release AAB was not created"
             exit 1
           fi
-          
+
+          # Rename outputs to match what the upload steps expect
           cp "$APK" ClearNet.apk
           cp "$AAB" ClearNet.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.APP_GITHUB_TOKEN }}
 
-      - name: Upload APK artifact
-        if: ${{ !env.ACT }}
+
+      - name: Upload APK artefact
+        if: ${{ !env.ACT }} # Accounts for 'act' not having a ACTIONS_RUNTIME_TOKEN
         uses: actions/upload-artifact@v7
         with:
           name: ClearNet-apk
           path: ClearNet.apk
           retention-days: 1
 
-      - name: Upload bundle artifact
+      - name: Upload bundle artefact
         if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
@@ -168,7 +173,7 @@ jobs:
           path: ClearNet.aab
           retention-days: 1
 
-      - name: Upload version artifact
+      - name: Upload version artefact
         if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
@@ -187,19 +192,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Download APK artifact
+      - name: Download APK artefact
         uses: actions/download-artifact@v8
         with:
           name: ClearNet-apk
           path: ./
 
-      - name: Download bundle artifact
+      - name: Download bundle artefact
         uses: actions/download-artifact@v8
         with:
           name: ClearNet-bundle
           path: ./
 
-      - name: Download version artifact
+      - name: Download version artefact
         uses: actions/download-artifact@v8
         with:
           name: version-file
@@ -219,7 +224,7 @@ jobs:
           mv ClearNet.apk ClearNet-v$VERSION.apk
           mv ClearNet.aab ClearNet-v$VERSION.aab
 
-      - name: Create or Update GitHub release
+      - name: Create or update GitHub release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}

@@ -11,15 +11,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
+import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/protection_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -508,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-             const RadioListTile<String>(
+              const RadioListTile<String>(
                 title: Text('None (Default)'),
                 value: 'none',
               ),
@@ -516,9 +519,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                 title: const Text(Constants.appCalculatorDisguiseName),
                 value: Constants.appCalculatorDisguiseName.toLowerCase(),
               ),
-              RadioListTile<String>(title: 
-              const Text(Constants.appNotesDisguiseName), 
-              value: Constants.appNotesDisguiseName.toLowerCase()),
+              RadioListTile<String>(
+                title: const Text(Constants.appNotesDisguiseName),
+                value: Constants.appNotesDisguiseName.toLowerCase(),
+              ),
             ],
           ),
         ),
@@ -791,7 +795,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         final trimmedLine = line.trim();
         if (trimmedLine.startsWith('-')) {
           features.add(trimmedLine.substring(1).trim());
-        } 
+        }
       }
 
       widgets.add(
@@ -951,6 +955,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
+  void _goToProtectionTab() {
+    // Protection tab: 0, Content tab: 1, Settings tab: 2
+    // if (!mounted) return;
+    AppNavigationService.jumpToTab(0); // Protection tab
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1056,7 +1066,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 _isUninstallPinSet
                     ? 'PIN is set and permanent'
                     : 'Set a PIN to prevent unauthorised uninstallation '
-                    'of the application',
+                          'of the application',
               ),
               trailing: _isUninstallPinSet
                   ? const Icon(Icons.lock, color: Colors.green)
@@ -1150,38 +1160,26 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
           ListTile(
-            title: const Text('Manage blocked websites'),
-            onTap: () => _navigateToContentSection(AppRoutes.blockedSites),
-          ),
-          ListTile(
-            title: const Text('Manage blocked apps'),
-            onTap: () => _navigateToContentSection(AppRoutes.blockedApps),
-          ),
-          ListTile(
             title: const Text('Guide'),
             onTap: () => _navigateToContentSection(AppRoutes.guide),
           ),
           AppTourManager.appTourItem(
             key: _replayTourKey,
-            title: 'Replay Feature Tour',
+            title: 'Replay feature tour',
             description:
                 'Reset and replay the feature walkthrough across all screens '
                 'at any time.',
             child: ListTile(
               title: const Text('Replay app tour'),
-              subtitle: const Text('Walkthrough key features '
-              'of ${Constants.appName}'),
+              subtitle: const Text(
+                'Walkthrough key features '
+                'of ${Constants.appName}',
+              ),
               onTap: () async {
                 await AppTourManager.resetAppTourState();
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Feature tour reset. Switch to Protection screen to '
-                      'start.',
-                    ),
-                  ),
-                );
+                AppNavigationService.jumpToTab(0);
+                AppTourManager.notifyPermissionsUpdated();
               },
             ),
           ),

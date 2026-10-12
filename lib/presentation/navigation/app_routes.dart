@@ -5,8 +5,7 @@ import 'package:flutter/services.dart';
 // Project imports:
 import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
-import 'package:clearnet/presentation/screens/blocked_apps_screen.dart';
-import 'package:clearnet/presentation/screens/blocked_sites.dart';
+import 'package:clearnet/presentation/screens/blocked_content.dart';
 import 'package:clearnet/presentation/screens/guide_screen.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/presentation/screens/protection_screen.dart';
@@ -19,7 +18,6 @@ class AppRoutes {
   static const String settingsPath = '/settings';
   static const String home = '/protection';
   static const String blocked = '/blocked';
-  static const String blockedApps = '/blocked_apps';
   static const String blockedSites = '/blocked_sites';
   static const String guide = '/guide';
 
@@ -36,11 +34,8 @@ class AppRoutes {
       case blocked:
         return const BlockedAccessScreen();
 
-      case blockedApps:
-        return const BlockedAppsScreen();
-
       case blockedSites:
-        return const BlockedSitesScreen();
+        return const BlockedContentScreen();
 
       case settingsPath:
         return const SettingsScreen();

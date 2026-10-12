@@ -1,74 +1,74 @@
 {
-    "title": "ClearNet Guide",
+    "title": "ClearNet guide",
     "pages": [
         {
             "type": "intro",
-            "title": "Take Control of Your Digital Habits",
+            "title": "Take control of your digital habits",
             "description": "ClearNet helps you block adult content, restrict distracting apps and maintain a safe digital environment."
         },
         {
             "type": "do",
-            "title": "Enable Local VPN Protection",
+            "title": "Enable local VPN protection",
             "description": "Keep local VPN active to block adult websites, dangerous domains and enforce SafeSearch."
         },
         {
             "type": "do",
-            "title": "Activate Device Admin & Accessibility",
+            "title": "Activate device admin & accessibility",
             "description": "Prevent app uninstallation and bypass attempts during moments of temptation."
         },
         {
             "type": "do",
-            "title": "Set a Security PIN Lock",
+            "title": "Set a security PIN lock",
             "description": "Lock app settings and blocklists behind a PIN to stop impulse modifications."
         },
         {
             "type": "do",
-            "title": "Customise Your Blocklist",
+            "title": "Customise your blocklist",
             "description": "Add specific websites, keywords and distracting apps to keep your blocklist effective."
         },
         {
             "type": "dont",
-            "title": "Don't Disable VPN Protection",
+            "title": "Don't disable VPN protection",
             "description": "Turning off local VPN leaves your device exposed to adult content and triggers."
         },
         {
             "type": "dont",
-            "title": "Don't Turn Off Accessibility or Device Admin",
+            "title": "Don't turn off accessibility or device admin",
             "description": "Disabling core permissions creates easy bypass pathways when feeling tempted."
         },
         {
             "type": "dont",
-            "title": "Don't Leave Alternative Browsers Unblocked",
+            "title": "Don't leave alternative browsers unblocked",
             "description": "Unrestricted web browsers can become easy loopholes around domain filtering."
         },
         {
             "type": "dont",
-            "title": "Don't Keep Security PIN Easily Accessible",
+            "title": "Don't keep security PIN easily accessible",
             "description": "Writing down or storing your security PIN nearby weakens impulse prevention."
         },
         {
             "type": "dont",
-            "title": "Don't Delay Adding New Triggers",
+            "title": "Don't delay adding new triggers",
             "description": "When discovering a new distracting site, add it to your custom blocklist immediately."
         },
         {
             "type": "dont",
-            "title": "Don't Use Proxy or Secondary VPN Tools",
+            "title": "Don't use proxy or secondary VPN tools",
             "description": "Attempting to bypass ClearNet with external proxies undermines your protection goals."
         },
         {
             "type": "tip",
-            "title": "Stay Consistent Daily",
+            "title": "Stay consistent daily",
             "description": "Building self-control takes time. Focus on keeping your protection active uninterrupted."
         },
         {
             "type": "tip",
-            "title": "Monitor Blocking Stats",
+            "title": "Monitor blocking statistics",
             "description": "Check your dashboard regularly to see how many adult sites and apps were prevented."
         },
         {
             "type": "tip",
-            "title": "Build Positive Offline Habits",
+            "title": "Build positive offline habits",
             "description": "Replace blocked screen time with physical activity, hobbies and social connections."
         }
     ]

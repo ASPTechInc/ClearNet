@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/stats_manager.dart';
 import 'package:clearnet/presentation/widgets/permission_requirement_dialogue.dart';
@@ -75,12 +77,25 @@ class _ProtectionScreenState extends State<ProtectionScreen>
     _tourTimer?.cancel();
     _tourTimer = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
-      await AppTourManager.startAppTourIfReady(
+
+      final showcase = ShowcaseView.get();
+      showcase.removeOnFinishCallback(_goToContentTab);
+
+      final started = await AppTourManager.startAppTourIfReady(
         context: context,
         keys: [_protectionSwitchKey, _activityCardKey],
         tourKey: AppTourManager.protectionTourKey,
       );
+
+      if (!started) return;
+      showcase.addOnFinishCallback(_goToContentTab);
     });
+  }
+
+  void _goToContentTab() {
+    // Protection tab: 0, Content tab: 1, Settings tab: 2
+    if (!mounted) return;
+    AppNavigationService.jumpToTab(1); // Content tab
   }
 
   Future<void> _loadData() async {

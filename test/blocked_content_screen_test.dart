@@ -15,7 +15,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
-import 'package:clearnet/presentation/screens/blocked_sites.dart';
+import 'package:clearnet/presentation/screens/blocked_content.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
   SharedPreferencesAsyncPlatform.instance =
       InMemorySharedPreferencesAsync.empty();
 
-  group('BlockedSitesScreen Widget Tests', () {
+  group('BlockedContentScreen Widget Tests', () {
     late Directory tempDir;
 
     setUp(() async {
@@ -34,6 +34,9 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(VpnController.platform, (methodCall) async {
+            if (methodCall.method == 'getInstalledApps') {
+              return <Map<String, String>>[];
+            }
             return null;
           });
 
@@ -172,22 +175,21 @@ void main() {
     });
 
     Widget createWidgetUnderTest() {
-      return const MaterialApp(home: BlockedSitesScreen());
+      return const MaterialApp(home: BlockedContentScreen());
     }
 
-    testWidgets(
-      'BlockedSitesScreen displays all 3 tabs: Domains, Keywords, Whitelist',
-      (WidgetTester tester) async {
-        await tester.pumpWidget(createWidgetUnderTest());
-        await tester.pumpAndSettle();
+    testWidgets('BlockedContentScreen displays all 4 tabs: '
+        'Domains, Keywords, Whitelist, Apps', (WidgetTester tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
 
-        expect(find.text('Blocked content'), findsOneWidget);
-        expect(find.text('Domains'), findsOneWidget);
-        expect(find.text('Keywords'), findsOneWidget);
-        expect(find.text('Whitelist'), findsOneWidget);
-        expect(find.byKey(const Key('domain_input')), findsOneWidget);
-      },
-    );
+      expect(find.text('Blocked content'), findsOneWidget);
+      expect(find.text('Domains'), findsOneWidget);
+      expect(find.text('Keywords'), findsOneWidget);
+      expect(find.text('Whitelist'), findsOneWidget);
+      expect(find.text('Apps'), findsOneWidget);
+      expect(find.byKey(const Key('domain_input')), findsOneWidget);
+    });
 
     testWidgets('adds a new domain and displays it in list', (
       WidgetTester tester,
@@ -264,5 +266,107 @@ void main() {
         expect(find.textContaining('already in the whitelist'), findsOneWidget);
       },
     );
+  });
+
+  group('BlockedAppsScreen Widget & Interaction Tests', () {
+    final fakeApps = [
+      {'name': 'Camera App', 'packageName': 'com.android.camera'},
+      {'name': 'Social App', 'packageName': 'com.social.media'},
+      {'name': 'Game App', 'packageName': 'com.gaming.fun'},
+    ];
+
+    setUp(() async {
+      await SharedPreferencesAsync().clear();
+      SharedPreferences.setMockInitialValues({});
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel(Constants.methodChannelName),
+            (MethodCall methodCall) async {
+              if (methodCall.method == 'getInstalledApps') {
+                return fakeApps;
+              }
+              return null;
+            },
+          );
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel(Constants.methodChannelName),
+            null,
+          );
+    });
+
+    Widget createWidgetUnderTest() {
+      return const MaterialApp(home: BlockedContentScreen());
+    }
+
+    testWidgets('renders list of installed apps correctly', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Apps'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Search apps...'), findsOneWidget);
+      expect(find.text('Camera App'), findsOneWidget);
+      expect(find.text('Social App'), findsOneWidget);
+      expect(find.text('Game App'), findsOneWidget);
+    });
+
+    testWidgets('filters apps based on search query', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Apps'));
+      await tester.pumpAndSettle();
+
+      final searchField = find.byType(TextField);
+      expect(searchField, findsOneWidget);
+
+      await tester.enterText(searchField, 'Social');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Social App'), findsOneWidget);
+      expect(find.text('Camera App'), findsNothing);
+      expect(find.text('Game App'), findsNothing);
+    });
+
+    testWidgets('toggling switch blocks and unblocks an app', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Apps'));
+      await tester.pumpAndSettle();
+
+      final cameraSwitch = find.widgetWithText(SwitchListTile, 'Camera App');
+      expect(cameraSwitch, findsOneWidget);
+
+      // Tap to block Camera App
+      await tester.tap(cameraSwitch);
+      await tester.pumpAndSettle();
+
+      List<String>? blocked = await SharedPreferencesAsync().getStringList(
+        Constants.blockedAppsKey,
+      );
+      expect(blocked, contains('com.android.camera'));
+
+      // Tap again to unblock
+      await tester.tap(cameraSwitch);
+      await tester.pumpAndSettle();
+
+      blocked = await SharedPreferencesAsync().getStringList(
+        Constants.blockedAppsKey,
+      );
+      expect(blocked, isNot(contains('com.android.camera')));
+    });
   });
 }

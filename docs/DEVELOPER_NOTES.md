@@ -10,8 +10,8 @@
 - [Enable pre-commit in repository](#enable-pre-commit-in-repository)
 - [SDK locations](#sdk-locations)
 - [Flutter plugin error notes](#flutter-plugin-error-notes)
-
 - [F-Droid release notes](#f-droid-release-notes)
+- [Update or regenerate gradle-daemon-jvm properties](#update-or-regenerate-gradle-daemon-jvm-properties)
 
 ---
 
@@ -31,7 +31,7 @@ It complements what is documented in the [README](/README.md).
 - **Format everything**: `dart format .`
 - **Check for static analysis issues**: `flutter analyze`
 - **Run all unit/widget tests**: `flutter test`
-- **Clean the build artifacts**: `flutter clean`
+- **Clean the build artefacts**: `flutter clean`
 - **Fetch dependencies**: `flutter pub get`
 - **Check environment health**: `flutter doctor`
 
@@ -185,7 +185,25 @@ containers.
 - **Linux**: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
 - **Windows**: `choco install act` or `scoop install act`
 
-### Local Workspace Variables
+### Add your user to the docker group
+
+  ```bash
+  # Add your user to the docker group
+  sudo usermod -aG docker $USER
+  
+  # Install 'newgrp' command
+  sudo apt install util-linux-extra
+  
+  # Apply the group changes
+  newgrp docker
+  
+  # Verify the fix
+  docker ps
+  ````
+
+> If changes do not take effect, log out and log back in
+
+### Local workspace variables
 
 Create these environment configurations at the root directory of the project to enable Android
 SDK bindings within `act`:
@@ -193,24 +211,47 @@ SDK bindings within `act`:
 `.env` / `.vars`
 
 ```bash
+# Contents of .env or .vars file
 ANDROID_HOME=/<path-to-your-local-sdk>/Android/Sdk
 ```
 
-### Running Workflow Tasks
+.secrets
+
+```bash
+# Contents of .secrets
+GITHUB_TOKEN=<github-personal-access-token>
+```
+
+### Running workflow tasks
+
+> Alternatively, the `act` command can be executed as `~/bin/act`
+> Given that `act` uses Docker containers to run workflows, you will need to have **Docker**
+> (or an alternative like Podman) installed and running on your machine.
 
 1. **List all available actions/jobs:**
    ```bash
    act -l
    ```
-2. **Test Continuous Integration pipeline (`ci.yml`):**
+2. **Test Continuous Integration (CI) pipeline (`ci.yml`):**
    ```bash
    act -j build -W .github/workflows/ci.yml
-   act -j test -W .github/workflows/ci.yml
+
+   # act --env-file .env --container-options "-v /<path-to-directory>/Android/Sdk:/opt/android-sdk" --env ANDROID_HOME=/opt/android-sdk -j build -W .github/workflows/ci.yml
+
+   act -j unit-test -W .github/workflows/ci.yml
+   act -j instrumentation-test -W .github/workflows/ci.yml
    act -j lint -W .github/workflows/ci.yml
    ```
-3. **Test Release Production pipeline (`release.yml`):**
+3. **Test release production pipeline (`release.yml`):**
    ```bash
    act -j build -W .github/workflows/release.yml
+
+   # act --secret-file .secrets --container-options "-v /<path-to-directory>/Android/Sdk:/opt/android-sdk" --env ANDROID_HOME=/opt/android-sdk -j build -W .github/workflows/release.yml
+   ```
+
+4. **Dry run (to see what steps would run without executing them):**
+   ```bash
+   act -n
    ```
 
 ---
@@ -223,6 +264,9 @@ disk, execute the following from the workspace root:
 ```bash
 # Untrack build directory cache
 git rm -r --cached build/
+
+# OR, if there are other build/ folders (like app/build/) that are also being tracked, run:
+# git rm -r --cached **/build/
 
 # Commit tracking updates
 git commit -m "Stop tracking build/ directory"
@@ -300,8 +344,8 @@ configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 
 to
 
-```kotlin
-configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
+```bash
+configureAbiWithoutSplits(projectToAddTasksTo, androidExtension)
 ```
 
 Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK folder might notice this local modification. If it complains about a conflict, you can safely reset or discard changes in that directory before upgrading (git checkout -- packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt), since the upstream Flutter developers will have officially fixed the typo in the newer version anyway.
@@ -346,5 +390,13 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
 6. **Open a merge request:**
    - Navigate to the fork on GitLab and click **Create Merge Request**.
    - Select `RFP` (Request for Packaging) or standard new app template. The F-Droid maintainers and automated CI bots will test building the application and reply directly to the merge request.
+
+---
+
+## Update or regenerate gradle-daemon-jvm properties
+
+```bash
+./gradlew updateDaemonJvm --jvm-version 17
+```
 
 ---
