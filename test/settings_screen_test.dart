@@ -15,6 +15,8 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 // Project imports:
+import 'package:clearnet/data/services/app_nav_service.dart';
+import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/presentation/screens/settings_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
@@ -119,6 +121,41 @@ void main() {
       expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Theme'), findsOneWidget);
     });
+
+    testWidgets(
+      'Replay app tour resets tour flags and jumps to Protection tab',
+      (WidgetTester tester) async {
+        final prefs = SharedPreferencesAsync();
+        await prefs.setBool('has_seen_app_tour', true);
+        await prefs.setBool(AppTourManager.protectionTourKey, true);
+        await prefs.setBool(AppTourManager.contentTourKey, true);
+        await prefs.setBool(AppTourManager.settingsTourKey, true);
+        AppNavigationService.jumpToTab(2);
+
+        await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+        await tester.pumpAndSettle();
+
+        final replayTourFinder = find.widgetWithText(
+          ListTile,
+          'Replay app tour',
+        );
+        await tester.scrollUntilVisible(
+          replayTourFinder,
+          200.0,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(replayTourFinder);
+        await tester.pumpAndSettle();
+
+        expect(AppNavigationService.controller.index, 0);
+        expect(await prefs.getBool('has_seen_app_tour'), isNull);
+        expect(await prefs.getBool(AppTourManager.protectionTourKey), isNull);
+        expect(await prefs.getBool(AppTourManager.contentTourKey), isNull);
+        expect(await prefs.getBool(AppTourManager.settingsTourKey), isNull);
+      },
+    );
 
     testWidgets('App PIN and Lock settings with PIN relationship test', (
       WidgetTester tester,
@@ -368,8 +405,10 @@ void main() {
 
       expect(find.text('Source code'), findsAtLeastNWidgets(1));
       expect(
-        find.textContaining('${Constants.appName} is free open-source '
-        'software'),
+        find.textContaining(
+          '${Constants.appName} is free open-source '
+          'software',
+        ),
         findsOneWidget,
       );
       expect(
@@ -398,8 +437,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Support ${Constants.appName}'), findsOneWidget);
-      expect(find.textContaining('If you appreciate '
-      '${Constants.appName}'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'If you appreciate '
+          '${Constants.appName}',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.text('Support page: ${Constants.buyMeACoffeeUrl}'),
         findsOneWidget,

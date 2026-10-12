@@ -12,13 +12,19 @@ import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
 class BottomNavBar extends StatefulWidget {
-  const BottomNavBar({super.key});
+  const BottomNavBar({super.key,  required this.controller});
+
+  final PersistentTabController controller;
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
 class _BottomNavBarState extends State<BottomNavBar> {
+    void jumpToTab(int index) {
+    widget.controller.jumpToTab(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -62,6 +68,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
     ];
 
     return PersistentTabView(
+      controller: widget.controller,
       tabs: tabs,
       navBarBuilder: (navBarConfig) {
         return NavigationBar(

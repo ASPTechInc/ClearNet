@@ -8,7 +8,7 @@ import 'package:showcaseview/showcaseview.dart';
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 
-/// A central manager for handling app-wide feature showcase tours 
+/// A central manager for handling app-wide feature showcase tours
 /// using [ShowcaseView].
 class AppTourManager {
   AppTourManager._();
@@ -29,7 +29,7 @@ class AppTourManager {
   /// A notifier triggered when permissions check completes or updates.
   static final ValueNotifier<int> permissionsCheckNotifier = ValueNotifier(0);
 
-  /// Triggers a notification so listening screens re-evaluate if the app tour 
+  /// Triggers a notification so listening screens re-evaluate if the app tour
   /// can start.
   static void notifyPermissionsUpdated() {
     permissionsCheckNotifier.value++;
@@ -50,7 +50,7 @@ class AppTourManager {
   }
 
   /// Initialises and registers the global configuration for [ShowcaseView].
-  /// Call this during app startup or before displaying the main UI 
+  /// Call this during app startup or before displaying the main UI
   /// (e.g. in [main.dart] on [BottomNavBar]).
   static void initialiseAppTour({
     List<GlobalKey>? hideFloatingActionForKeys,
@@ -62,10 +62,11 @@ class AppTourManager {
       globalFloatingActionWidget: (showcaseContext) {
         final theme = Theme.of(showcaseContext);
         final colorScheme = theme.colorScheme;
+        final bottomInset = MediaQuery.viewPaddingOf(showcaseContext).bottom;
 
         return FloatingActionWidget(
           left: 16,
-          bottom: 24,
+          bottom: bottomInset + kBottomNavigationBarHeight + 12,
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: FilledButton.tonalIcon(
@@ -126,7 +127,7 @@ class AppTourManager {
   }
 
   /// Wraps any given [child] widget with a [Showcase] spotlight.
-  /// Falls back to rendering [child] directly when ShowcaseView is not 
+  /// Falls back to rendering [child] directly when ShowcaseView is not
   /// registered
   /// (e.g. in unit/widget tests that don't set up the showcase).
   static Widget appTourItem({
@@ -187,7 +188,11 @@ class AppTourManager {
     if (keys.isEmpty) return;
     ensureRegistration();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ShowcaseView.get().startShowCase(keys);
+      final showcase = ShowcaseView.get();
+      if (showcase.isShowcaseRunning || !keys.every(showcase.isTargetRendered)) {
+        return;
+      }
+      showcase.startShowCase(keys);
     });
   }
 
@@ -197,7 +202,7 @@ class AppTourManager {
   ///    a one-time global dismissal, e.g. during onboarding).
   /// 3. Safe browsing or Accessibility service is enabled.
   /// 4. Battery Optimisation is disabled (ignored).
-  /// 5. No modal dialog or overlay route is currently visible on top of 
+  /// 5. No modal dialog or overlay route is currently visible on top of
   ///    [context].
   static Future<bool> startAppTourIfReady({
     required BuildContext context,
@@ -214,6 +219,8 @@ class AppTourManager {
     final hasSeen = await prefs.getBool(keyToUse) ?? false;
     if (hasSeenGlobal || hasSeen || keys.isEmpty) return false;
 
+    if (ShowcaseView.get().isShowcaseRunning) return false;
+
     // Verify Safe Browsing / Accessibility service is enabled
     final isAccessibilityEnabled =
         await VpnController.isAccessibilityServiceEnabled();
@@ -224,10 +231,24 @@ class AppTourManager {
         await VpnController.isIgnoringBatteryOptimisations();
     if (!isBatteryOptimised) return false;
 
-    // Verify no dialog or route is showing on top of the context route
+    // In the persistent tab layout, a screen can be mounted and visible without
+    // being the current route from the Navigator perspective. We only require it
+    // to still be mounted and to have rendered targets before starting.
     if (!context.mounted) return false;
-    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? false;
-    if (!isCurrentRoute) return false;
+
+    final showcaseView = ShowcaseView.get();
+    final targetRendered = keys.every(showcaseView.isTargetRendered);
+    if (!targetRendered) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          final recheck = ShowcaseView.get();
+          if (!recheck.isShowcaseRunning && keys.every(recheck.isTargetRendered)) {
+            recheck.startShowCase(keys, delay: const Duration(milliseconds: 150));
+          }
+        }
+      });
+      return false;
+    }
 
     // All conditions satisfied: trigger app tour
     startAppTour(keys);
@@ -250,8 +271,8 @@ class AppTourManager {
     }
   }
 
-  /// Resets the showcase tour state so it can be played again from 
-  /// Settings/Help.
+  /// Resets the showcase tour state so it can be played again from
+  /// Settings screen.
   static Future<void> resetAppTourState() async {
     final prefs = SharedPreferencesAsync();
     await prefs.remove(_appTourCompletedKey);

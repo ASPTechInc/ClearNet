@@ -5,38 +5,52 @@ import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // Package imports:
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
-class BlockedSitesScreen extends StatefulWidget {
-  const BlockedSitesScreen({super.key});
+class BlockedContentScreen extends StatefulWidget {
+  const BlockedContentScreen({super.key});
 
   @override
-  State<BlockedSitesScreen> createState() => _BlockedSitesScreenState();
+  State<BlockedContentScreen> createState() => _BlockedContentScreenState();
 }
 
-class _BlockedSitesScreenState extends State<BlockedSitesScreen>
+class _BlockedContentScreenState extends State<BlockedContentScreen>
     with WidgetsBindingObserver {
+  static const platform = MethodChannel(Constants.methodChannelName);
+  final _prefs = SharedPreferencesAsync();
+
   final TextEditingController _domainController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
   final TextEditingController _whitelistController = TextEditingController();
+  final TextEditingController _appController = TextEditingController();
 
   final GlobalKey _importExportKey = GlobalKey();
   final GlobalKey _tabBarKey = GlobalKey();
   final GlobalKey _addInputKey = GlobalKey();
   final GlobalKey _addButtonKey = GlobalKey();
+  final GlobalKey _appInputKey = GlobalKey();
+  final GlobalKey _appToggleKey = GlobalKey();
   Timer? _tourTimer;
+  bool _areAppsLoading = true;
 
   List<String> userDomains = [];
   List<String> userKeywords = [];
   List<String> userWhitelist = [];
+  List<Map<String, String>> _allApps = [];
+  List<Map<String, String>> _filteredApps = [];
+  Set<String> _blockedPackages = {};
 
   @override
   void initState() {
@@ -44,6 +58,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
     WidgetsBinding.instance.addObserver(this);
     AppTourManager.permissionsCheckNotifier.addListener(_onPermissionsUpdated);
     unawaited(_loadData());
+    _appController.addListener(_filterApps);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndStartAppTour();
@@ -60,6 +75,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
     _domainController.dispose();
     _keywordController.dispose();
     _whitelistController.dispose();
+    _appController.dispose();
     super.dispose();
   }
 
@@ -78,23 +94,67 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
     _tourTimer?.cancel();
     _tourTimer = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
-      await AppTourManager.startAppTourIfReady(
+
+      final showcase = ShowcaseView.get();
+      showcase.removeOnFinishCallback(_goToSettingsTab);
+
+      final started = await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [_importExportKey, _tabBarKey, _addInputKey, _addButtonKey],
+        keys: [
+          _importExportKey,
+          _tabBarKey,
+          _addInputKey,
+          _addButtonKey,
+          _appInputKey,
+          _appToggleKey,
+        ],
         tourKey: AppTourManager.contentTourKey,
       );
+
+      if (!started) return;
+      showcase.addOnFinishCallback(_goToSettingsTab);
     });
+  }
+
+  void _goToSettingsTab() {
+    // Protection tab: 0, Content tab: 1, Settings tab: 2
+    if (!mounted) return;
+    AppNavigationService.jumpToTab(2); // Settings tab
   }
 
   Future<void> _loadData() async {
     final domains = await BlocklistManager.loadUserDomains();
     final keywords = await BlocklistManager.loadUserKeywords();
     final whitelist = await BlocklistManager.loadUserWhitelist();
+
+    if (!mounted) return;
     setState(() {
       userDomains = domains;
       userKeywords = keywords;
       userWhitelist = whitelist;
     });
+
+    try {
+      final List<dynamic> apps = await platform.invokeMethod(
+        'getInstalledApps',
+      );
+      final blocked =
+          await _prefs.getStringList(Constants.blockedAppsKey) ?? [];
+
+      if (!mounted) return;
+      setState(() {
+        _allApps = apps.map((e) => Map<String, String>.from(e)).toList();
+        _filteredApps = _allApps;
+        _blockedPackages = blocked.toSet();
+        _areAppsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _areAppsLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading apps: $e')));
+    }
   }
 
   Future<void> _addDomain() async {
@@ -209,6 +269,33 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
     await _loadData();
     await VpnController.removeWhitelist(oldSite);
     await VpnController.addWhitelist(newSite);
+  }
+
+  void _filterApps() {
+    final query = _appController.text.toLowerCase();
+    setState(() {
+      _filteredApps = _allApps
+          .where(
+            (app) =>
+                app['name']!.toLowerCase().contains(query) ||
+                app['packageName']!.toLowerCase().contains(query),
+          )
+          .toList();
+    });
+  }
+
+  Future<void> _toggleApp(String packageName, bool isBlocked) async {
+    setState(() {
+      if (isBlocked) {
+        _blockedPackages.add(packageName);
+      } else {
+        _blockedPackages.remove(packageName);
+      }
+    });
+    await _prefs.setStringList(
+      Constants.blockedAppsKey,
+      _blockedPackages.toList(),
+    );
   }
 
   Future<void> _showEditDialog(String value, String type) async {
@@ -413,10 +500,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
                     text: 'Whitelist',
                     icon: Icon(Icons.check_circle_outline),
                   ),
-                   Tab(
-                    text: 'Apps',
-                    icon: Icon(Icons.apps),
-                  ),
+                  Tab(text: 'Apps', icon: Icon(Icons.apps)),
                 ],
               ),
             ),
@@ -427,7 +511,7 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
             _buildDomainList(),
             _buildKeywordList(),
             _buildWhitelistList(),
-            _buildAppList()
+            _buildAppList(),
           ],
         ),
       ),
@@ -626,13 +710,73 @@ class _BlockedSitesScreenState extends State<BlockedSitesScreen>
   }
 
   Widget _buildAppList() {
-    return Center(
-      child: Text(
-        'App list goes here',
-        style: const TextStyle(fontSize: 16, color: Colors.grey),
-      ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppTourManager.appTourItem(
+                  key: _appInputKey,
+                  title: 'Search Applications',
+                  description:
+                      'Find any installed application by typing its name or '
+                      'package name.',
+                  child: TextField(
+                    controller: _appController,
+                    decoration: InputDecoration(
+                      hintText: 'Search apps...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _areAppsLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: _filteredApps.length,
+                  itemBuilder: (context, index) {
+                    final app = _filteredApps[index];
+                    final pkg = app['packageName']!;
+                    final isBlocked = _blockedPackages.contains(pkg);
+
+                    final tile = SwitchListTile(
+                      title: Text(app['name']!),
+                      subtitle: Text(pkg, style: const TextStyle(fontSize: 12)),
+                      value: isBlocked,
+                      onChanged: (val) => _toggleApp(pkg, val),
+                      secondary: const Icon(Icons.apps),
+                    );
+
+                    if (index == 0) {
+                      return AppTourManager.appTourItem(
+                        key: _appToggleKey,
+                        title: 'Block Application',
+                        description:
+                            'Toggle the switch to block or allow access to '
+                            'specific installed apps.',
+                        child: tile,
+                      );
+                    }
+
+                    return tile;
+                  },
+                ),
+        ),
+      ],
     );
   }
+
   Widget _buildNoDataView(String message) {
     return Center(
       child: Column(

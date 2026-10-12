@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
@@ -42,6 +43,8 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     _setupMethodChannel();
     unawaited(_checkInitialAction());
     AppTourManager.initialiseAppTour();
+
+    if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 1), () async {
         await _checkRequiredPermissions();
@@ -108,7 +111,12 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
       if (!granted) return;
     }
 
-    AppTourManager.notifyPermissionsUpdated();
+    unawaited(
+      Future<void>.delayed(
+        const Duration(milliseconds: 250),
+        AppTourManager.notifyPermissionsUpdated,
+      ),
+    );
   }
 
   Future<bool> _showAccessibilityDialogue() async {
@@ -128,7 +136,8 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
             'using the app.',
         initialButtonText: 'Enable service',
         clickedButtonText: 'Confirm enabling',
-        primaryActionTextChangeDelay: const Duration(seconds: 2),
+        // 1200 means 1.2 seconds
+        primaryActionTextChangeDelay: const Duration(milliseconds: 1200),
         exitButtonText: 'Exit app',
         onActionPressed: () async {
           await VpnController.openAccessibilitySettings();
@@ -192,7 +201,7 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: mode,
-          home: const BottomNavBar(),
+          home: BottomNavBar(controller: AppNavigationService.controller),
           // initialRoute: AppRoutes.root,
           onGenerateRoute: AppRoutes.generateRoute,
         );
