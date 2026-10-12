@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,7 +21,6 @@ import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
-import 'package:clearnet/presentation/screens/protection_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -38,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   static const platform = MethodChannel(Constants.methodChannelName);
   final storage = const FlutterSecureStorage();
   final _prefs = SharedPreferencesAsync();
+  final ScrollController _scrollController = ScrollController();
 
   final GlobalKey _appLockKey = GlobalKey();
   final GlobalKey _disguiseKey = GlobalKey();
@@ -80,6 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
     WidgetsBinding.instance.removeObserver(this);
     _dnsController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -108,6 +108,12 @@ class _SettingsScreenState extends State<SettingsScreen>
           _replayTourKey,
         ],
         tourKey: AppTourManager.settingsTourKey,
+        tabIndex: 2,
+        // The list builds lazily, so the first targets only exist once the
+        // list is back at the top (e.g. after tapping 'Replay app tour').
+        beforeStart: () {
+          if (_scrollController.hasClients) _scrollController.jumpTo(0);
+        },
       );
     });
   }
@@ -955,17 +961,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  void _goToProtectionTab() {
-    // Protection tab: 0, Content tab: 1, Settings tab: 2
-    // if (!mounted) return;
-    AppNavigationService.jumpToTab(0); // Protection tab
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
+        controller: _scrollController,
         children: [
           const Padding(
             padding: EdgeInsets.all(16.0),
@@ -997,7 +999,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: Colors.blue,
             ),
             title: const Text('Reliability & performance note'),
-            subtitle: const Text('Important information for app stability'),
+            subtitle: const Text('Important information for the stability '
+            'of the application'),
             onTap: _showReliabilityDialog,
           ),
           const Divider(),
@@ -1010,6 +1013,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           AppTourManager.appTourItem(
             key: _appLockKey,
+            enableAutoScroll: true,
             title: 'App lock',
             description:
                 'Require a secure PIN to open ${Constants.appName} or '
@@ -1036,10 +1040,11 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           AppTourManager.appTourItem(
             key: _disguiseKey,
+            enableAutoScroll: true,
             title: 'Disguise mode',
             description:
-                'Disguise ${Constants.appName} on your home screen as a '
-                'calculator, calendar or other innocuous application.',
+                'Disguise ${Constants.appName} on your home screen as an '
+                'innocuous application like a calculator or calendar.',
             child: ListTile(
               title: const Text('Disguise mode'),
               subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
@@ -1057,6 +1062,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           AppTourManager.appTourItem(
             key: _uninstallPinKey,
+            enableAutoScroll: true,
             title: 'Uninstall protection',
             description:
                 'Set a permanent PIN to prevent unauthorised app removal.',
@@ -1094,6 +1100,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           AppTourManager.appTourItem(
             key: _dnsKey,
+            enableAutoScroll: true,
             title: 'Secure DNS Resolver',
             description:
                 'Choose a curated encrypted DNS resolver (like Quad9 or '
@@ -1165,6 +1172,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           AppTourManager.appTourItem(
             key: _replayTourKey,
+            enableAutoScroll: true,
+            isLastStep: true,
             title: 'Replay feature tour',
             description:
                 'Reset and replay the feature walkthrough across all screens '

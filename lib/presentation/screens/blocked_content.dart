@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 // Package imports:
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
@@ -42,9 +41,6 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   final GlobalKey _tabBarKey = GlobalKey();
   final GlobalKey _addInputKey = GlobalKey();
   final GlobalKey _addButtonKey = GlobalKey();
-  final GlobalKey _keywordInputKey = GlobalKey();
-  final GlobalKey _whitelistInputKey = GlobalKey();
-  final GlobalKey _appInputKey = GlobalKey();
   final GlobalKey _appToggleKey = GlobalKey();
   Timer? _tourTimer;
   bool _areAppsLoading = true;
@@ -101,28 +97,26 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     _tourTimer = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
 
-      // The app tour on the 'Content' screen starts and uses 
+      // The app tour on the 'Content' screen starts and uses
       // only the 'Domain' tab
-      final started = await AppTourManager.startAppTourIfReady(
+      await AppTourManager.startAppTourIfReady(
         context: context,
         keys: [_importExportKey, _tabBarKey, _addInputKey, _addButtonKey],
         tourKey: AppTourManager.contentTourKey,
+        tabIndex: 1,
+        beforeStart: () => _tabController.index = 0,
         onFinish: _goToSettingsTab,
       );
-
-      if (started) {
-        _tabController.index = 0;
-      }
     });
   }
 
   void _goToSettingsTab() {
     // Protection tab: 0, Content tab: 1, Settings tab: 2
     if (!mounted) return;
-    try {
-      ShowcaseView.get().dismiss();
-    } catch (_) {}
-    AppNavigationService.jumpToTab(2); // Settings tab
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      AppNavigationService.jumpToTab(2); // Settings tab
+    });
   }
 
   Future<void> _loadData() async {
