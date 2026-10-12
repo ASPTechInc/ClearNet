@@ -27,9 +27,11 @@ class BlockedContentScreen extends StatefulWidget {
 }
 
 class _BlockedContentScreenState extends State<BlockedContentScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   static const platform = MethodChannel(Constants.methodChannelName);
   final _prefs = SharedPreferencesAsync();
+
+  late final TabController _tabController;
 
   final TextEditingController _domainController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
@@ -40,6 +42,8 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   final GlobalKey _tabBarKey = GlobalKey();
   final GlobalKey _addInputKey = GlobalKey();
   final GlobalKey _addButtonKey = GlobalKey();
+  final GlobalKey _keywordInputKey = GlobalKey();
+  final GlobalKey _whitelistInputKey = GlobalKey();
   final GlobalKey _appInputKey = GlobalKey();
   final GlobalKey _appToggleKey = GlobalKey();
   Timer? _tourTimer;
@@ -55,6 +59,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addObserver(this);
     AppTourManager.permissionsCheckNotifier.addListener(_onPermissionsUpdated);
     unawaited(_loadData());
@@ -76,6 +81,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     _keywordController.dispose();
     _whitelistController.dispose();
     _appController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -95,30 +101,27 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     _tourTimer = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
 
-      final showcase = ShowcaseView.get();
-      showcase.removeOnFinishCallback(_goToSettingsTab);
-
+      // The app tour on the 'Content' screen starts and uses 
+      // only the 'Domain' tab
       final started = await AppTourManager.startAppTourIfReady(
         context: context,
-        keys: [
-          _importExportKey,
-          _tabBarKey,
-          _addInputKey,
-          _addButtonKey,
-          _appInputKey,
-          _appToggleKey,
-        ],
+        keys: [_importExportKey, _tabBarKey, _addInputKey, _addButtonKey],
         tourKey: AppTourManager.contentTourKey,
+        onFinish: _goToSettingsTab,
       );
 
-      if (!started) return;
-      showcase.addOnFinishCallback(_goToSettingsTab);
+      if (started) {
+        _tabController.index = 0;
+      }
     });
   }
 
   void _goToSettingsTab() {
     // Protection tab: 0, Content tab: 1, Settings tab: 2
     if (!mounted) return;
+    try {
+      ShowcaseView.get().dismiss();
+    } catch (_) {}
     AppNavigationService.jumpToTab(2); // Settings tab
   }
 
@@ -453,67 +456,63 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Blocked content'),
-          actions: [
-            AppTourManager.appTourItem(
-              key: _importExportKey,
-              title: 'Import & Export',
-              description:
-                  'Import a custom blocklist file or export your current '
-                  'configuration to JSON.',
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: const Key('import_button'),
-                    icon: const Icon(Icons.file_upload),
-                    onPressed: _importFromFile,
-                    tooltip: 'Import ${Constants.blocklistFileName}',
-                  ),
-                  IconButton(
-                    key: const Key('export_button'),
-                    icon: const Icon(Icons.file_download),
-                    onPressed: _exportToFile,
-                    tooltip: 'Export ${Constants.blocklistFileName}',
-                  ),
-                ],
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Blocked content'),
+        actions: [
+          AppTourManager.appTourItem(
+            key: _importExportKey,
+            title: 'Import & Export',
+            description:
+                'Import a custom blocklist file or export your current '
+                'configuration to JSON.',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const Key('import_button'),
+                  icon: const Icon(Icons.file_upload),
+                  onPressed: _importFromFile,
+                  tooltip: 'Import ${Constants.blocklistFileName}',
+                ),
+                IconButton(
+                  key: const Key('export_button'),
+                  icon: const Icon(Icons.file_download),
+                  onPressed: _exportToFile,
+                  tooltip: 'Export ${Constants.blocklistFileName}',
+                ),
+              ],
             ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(kTextTabBarHeight),
-            child: AppTourManager.appTourItem(
-              key: _tabBarKey,
-              title: 'Filter categories',
-              description:
-                  'Switch between blocked domains (or websites), keywords, '
-                  'whitelisted websites and applications.',
-              child: const TabBar(
-                tabs: [
-                  Tab(text: 'Domains', icon: Icon(Icons.language)),
-                  Tab(text: 'Keywords', icon: Icon(Icons.text_format)),
-                  Tab(
-                    text: 'Whitelist',
-                    icon: Icon(Icons.check_circle_outline),
-                  ),
-                  Tab(text: 'Apps', icon: Icon(Icons.apps)),
-                ],
-              ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kTextTabBarHeight),
+          child: AppTourManager.appTourItem(
+            key: _tabBarKey,
+            title: 'Filter categories',
+            description:
+                'Switch between blocked domains (or websites), keywords, '
+                'whitelisted websites and applications.',
+            child: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Domains', icon: Icon(Icons.language)),
+                Tab(text: 'Keywords', icon: Icon(Icons.text_format)),
+                Tab(text: 'Whitelist', icon: Icon(Icons.check_circle_outline)),
+                Tab(text: 'Apps', icon: Icon(Icons.apps)),
+              ],
             ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildDomainList(),
-            _buildKeywordList(),
-            _buildWhitelistList(),
-            _buildAppList(),
-          ],
-        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDomainList(),
+          _buildKeywordList(),
+          _buildWhitelistList(),
+          _buildAppList(),
+        ],
       ),
     );
   }
@@ -530,8 +529,10 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
                   key: _addInputKey,
                   title: 'Add custom rule',
                   description:
-                      'Type a domain, keyword or whitelisted website URL to '
-                      'add it to your custom rules.',
+                      'Enter a domain to block websites.\n\n'
+                      'You can also add keywords, '
+                      'whitelisted websites and applications under their '
+                      'respective tabs to customise your rules.',
                   child: TextField(
                     key: const Key('domain_input'),
                     controller: _domainController,
@@ -717,23 +718,16 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
           child: Row(
             children: [
               Expanded(
-                child: AppTourManager.appTourItem(
-                  key: _appInputKey,
-                  title: 'Search Applications',
-                  description:
-                      'Find any installed application by typing its name or '
-                      'package name.',
-                  child: TextField(
-                    controller: _appController,
-                    decoration: InputDecoration(
-                      hintText: 'Search apps...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                child: TextField(
+                  controller: _appController,
+                  decoration: InputDecoration(
+                    hintText: 'Search apps...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    filled: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
                 ),
               ),

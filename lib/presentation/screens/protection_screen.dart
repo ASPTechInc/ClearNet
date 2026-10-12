@@ -78,17 +78,12 @@ class _ProtectionScreenState extends State<ProtectionScreen>
     _tourTimer = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
 
-      final showcase = ShowcaseView.get();
-      showcase.removeOnFinishCallback(_goToContentTab);
-
-      final started = await AppTourManager.startAppTourIfReady(
+      await AppTourManager.startAppTourIfReady(
         context: context,
         keys: [_protectionSwitchKey, _activityCardKey],
         tourKey: AppTourManager.protectionTourKey,
+        onFinish: _goToContentTab,
       );
-
-      if (!started) return;
-      showcase.addOnFinishCallback(_goToContentTab);
     });
   }
 
