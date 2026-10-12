@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
@@ -82,6 +81,7 @@ class _ProtectionScreenState extends State<ProtectionScreen>
         context: context,
         keys: [_protectionSwitchKey, _activityCardKey],
         tourKey: AppTourManager.protectionTourKey,
+        tabIndex: 0,
         onFinish: _goToContentTab,
       );
     });

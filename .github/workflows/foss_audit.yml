@@ -33,5 +33,8 @@ jobs:
       - name: Install Project Flutter Package Dependencies
         run: flutter pub get
 
+      - name: Generate Android Gradle Wrapper
+        run: flutter build apk --config-only
+
       - name: Execute FOSS Compliance Automated Audit Script
         run: ./scripts/foss_audit.sh

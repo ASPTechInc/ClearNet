@@ -81,7 +81,8 @@ void main() {
   });
 
   testWidgets(
-    'starts tour after accessibility dialog closes when battery is already enabled',
+    'starts tour after accessibility dialog closes when battery is already '
+    'enabled',
     (WidgetTester tester) async {
       isAccessibilityEnabled = false;
       isIgnoringBatteryOptimisation = true;
@@ -114,7 +115,8 @@ void main() {
   );
 
   testWidgets(
-    'starts tour after battery dialog closes when accessibility is already enabled',
+    'starts tour after battery dialog closes when accessibility is already '
+    'enabled',
     (WidgetTester tester) async {
       isAccessibilityEnabled = true;
       isIgnoringBatteryOptimisation = false;

@@ -210,6 +210,8 @@ class _GuideScreenState extends State<GuideScreen> with WidgetsBindingObserver {
                 const Divider(height: 1),
                 AppTourManager.appTourItem(
                   key: _guideControlsKey,
+                  isLastStep: true,
+                  hideSkipButton: true,
                   title: 'Guide Controls',
                   description:
                       'Use back and next buttons or page indicators to '
