@@ -1,5 +1,5 @@
 [versions]
-annotationJvm = "1.11.0-rc01"
+annotationJvm = "1.11.0"
 gradle = "8.9.3"
 kotlinGradlePlugin = "2.0.21"
 kotlinxSerializationJson = "1.7.3"
