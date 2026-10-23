@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/services.dart';
 
@@ -31,7 +34,6 @@ void main() {
                 return null;
               case 'isAccessibilityServiceEnabled':
               case 'isIgnoringBatteryOptimizations':
-              case 'showDisableConfirmation':
                 return true;
               case 'getBatteryStats':
                 return {'level': 100, 'isCharging': true};

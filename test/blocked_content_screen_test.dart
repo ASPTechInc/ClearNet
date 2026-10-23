@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:convert';
 import 'dart:io';
@@ -266,6 +269,140 @@ void main() {
         expect(find.textContaining('already in the whitelist'), findsOneWidget);
       },
     );
+
+    group('while blocking is on', () {
+      setUp(() async {
+        await BlocklistManager.addUserDomain('locked.com');
+        await BlocklistManager.addUserKeyword('lockedword');
+        await BlocklistManager.addUserWhitelist('allowed.com');
+        await SharedPreferencesAsync().setBool('is_blocking_enabled', true);
+      });
+
+      testWidgets('shows the locked banner', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('blocking_locked_banner')), findsOneWidget);
+      });
+
+      testWidgets('domains can be added but not removed', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete), findsNothing);
+
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'locked.com'),
+            matching: find.byIcon(Icons.lock_outline),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Turn off blocking to remove domains.'),
+          findsOneWidget,
+        );
+        expect(
+          await BlocklistManager.loadUserDomains(),
+          contains('locked.com'),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('domain_input')),
+          'newsite.com',
+        );
+        await tester.tap(find.byKey(const Key('add_domain_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          await BlocklistManager.loadUserDomains(),
+          contains('newsite.com'),
+        );
+      });
+
+      testWidgets('domains cannot be edited', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('locked.com'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.text('Turn off blocking to edit rules.'), findsOneWidget);
+      });
+
+      testWidgets('keywords cannot be removed', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Keywords'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'lockedword'),
+            matching: find.byIcon(Icons.lock_outline),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          await BlocklistManager.loadUserKeywords(),
+          contains('lockedword'),
+        );
+      });
+
+      testWidgets('whitelist entries can be removed but not added', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Whitelist'));
+        await tester.pumpAndSettle();
+
+        final input = tester.widget<TextField>(
+          find.byKey(const Key('whitelist_input')),
+        );
+        expect(input.enabled, isFalse);
+
+        await tester.tap(find.byKey(const Key('add_whitelist_button')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Turn off blocking to add whitelisted sites.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'allowed.com'),
+            matching: find.byIcon(Icons.delete),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          await BlocklistManager.loadUserWhitelist(),
+          isNot(contains('allowed.com')),
+        );
+      });
+
+      testWidgets('import is locked', (WidgetTester tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('import_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Turn off blocking to import a blocklist.'),
+          findsOneWidget,
+        );
+      });
+    });
   });
 
   group('BlockedAppsScreen Widget & Interaction Tests', () {
@@ -367,6 +504,36 @@ void main() {
         Constants.blockedAppsKey,
       );
       expect(blocked, isNot(contains('com.android.camera')));
+    });
+
+    testWidgets('apps can be blocked but not unblocked while blocking is on', (
+      WidgetTester tester,
+    ) async {
+      await SharedPreferencesAsync().setBool('is_blocking_enabled', true);
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Apps'));
+      await tester.pumpAndSettle();
+
+      final cameraSwitch = find.widgetWithText(SwitchListTile, 'Camera App');
+
+      await tester.tap(cameraSwitch);
+      await tester.pumpAndSettle();
+
+      List<String>? blocked = await SharedPreferencesAsync().getStringList(
+        Constants.blockedAppsKey,
+      );
+      expect(blocked, contains('com.android.camera'));
+
+      await tester.tap(cameraSwitch);
+      await tester.pumpAndSettle();
+
+      blocked = await SharedPreferencesAsync().getStringList(
+        Constants.blockedAppsKey,
+      );
+      expect(blocked, contains('com.android.camera'));
+      expect(find.text('Turn off blocking to unblock apps.'), findsOneWidget);
     });
   });
 }

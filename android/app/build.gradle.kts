@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 import java.util.Properties
 
 plugins {
@@ -36,6 +39,12 @@ android {
         getByName("androidTest") {
             java.srcDirs("src/androidTest/kotlin", "src/androidTest/java")
         }
+    }
+
+    // Omit Google's encrypted dependency metadata blob, which F-Droid rejects
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     signingConfigs {

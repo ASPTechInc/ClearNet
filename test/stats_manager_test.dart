@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/services.dart';
 

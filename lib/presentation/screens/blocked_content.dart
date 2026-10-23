@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 import 'dart:convert';
@@ -13,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Project imports:
 import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_lock_service.dart';
 import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
@@ -44,6 +48,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   final GlobalKey _appToggleKey = GlobalKey();
   Timer? _tourTimer;
   bool _areAppsLoading = true;
+  bool _isBlockingEnabled = false;
 
   List<String> userDomains = [];
   List<String> userKeywords = [];
@@ -58,6 +63,9 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addObserver(this);
     AppTourManager.permissionsCheckNotifier.addListener(_onPermissionsUpdated);
+    // Blocking can be turned on from the Protection tab while this screen is
+    // kept alive, so re-check it whenever the tab changes
+    AppNavigationService.controller.addListener(_onTabChanged);
     unawaited(_loadData());
     _appController.addListener(_filterApps);
 
@@ -72,6 +80,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     AppTourManager.permissionsCheckNotifier.removeListener(
       _onPermissionsUpdated,
     );
+    AppNavigationService.controller.removeListener(_onTabChanged);
     WidgetsBinding.instance.removeObserver(this);
     _domainController.dispose();
     _keywordController.dispose();
@@ -85,7 +94,68 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkAndStartAppTour();
+      unawaited(_refreshBlockingState());
     }
+  }
+
+  void _onTabChanged() {
+    // Settings can clear or reset content while this screen is kept alive,
+    // so reload the saved lists whenever the Content tab is opened
+    if (AppNavigationService.controller.index == 1) {
+      unawaited(_reloadSavedContent());
+    } else {
+      unawaited(_refreshBlockingState());
+    }
+  }
+
+  /// Reloads the saved lists and blocked apps without re-fetching the
+  /// installed apps, so the app search stays as it is.
+  Future<void> _reloadSavedContent() async {
+    final domains = await BlocklistManager.loadUserDomains();
+    final keywords = await BlocklistManager.loadUserKeywords();
+    final whitelist = await BlocklistManager.loadUserWhitelist();
+    final blocked = await _prefs.getStringList(Constants.blockedAppsKey) ?? [];
+    final isBlockingEnabled =
+        await _prefs.getBool('is_blocking_enabled') ?? false;
+
+    if (!mounted) return;
+    setState(() {
+      userDomains = domains;
+      userKeywords = keywords;
+      userWhitelist = whitelist;
+      _blockedPackages = blocked.toSet();
+      _isBlockingEnabled = isBlockingEnabled;
+    });
+  }
+
+  Future<void> _refreshBlockingState() async {
+    final isEnabled = await _prefs.getBool('is_blocking_enabled') ?? false;
+    if (!mounted || isEnabled == _isBlockingEnabled) return;
+    setState(() {
+      _isBlockingEnabled = isEnabled;
+    });
+  }
+
+  /// While blocking is on, only changes that make blocking stricter are
+  /// allowed. Returns true, and tells the user why, if [action] has to wait
+  /// until blocking is turned off.
+  Future<bool> _isLockedFor(String action) async {
+    await _refreshBlockingState();
+    if (!_isBlockingEnabled) return false;
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Turn off blocking to $action.'),
+            action: SnackBarAction(
+              label: 'Protection',
+              onPressed: () => AppNavigationService.jumpToTab(0),
+            ),
+          ),
+        );
+    }
+    return true;
   }
 
   void _onPermissionsUpdated() {
@@ -123,12 +193,15 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     final domains = await BlocklistManager.loadUserDomains();
     final keywords = await BlocklistManager.loadUserKeywords();
     final whitelist = await BlocklistManager.loadUserWhitelist();
+    final isBlockingEnabled =
+        await _prefs.getBool('is_blocking_enabled') ?? false;
 
     if (!mounted) return;
     setState(() {
       userDomains = domains;
       userKeywords = keywords;
       userWhitelist = whitelist;
+      _isBlockingEnabled = isBlockingEnabled;
     });
 
     try {
@@ -201,6 +274,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   Future<void> _addWhitelist(String site) async {
+    if (await _isLockedFor('add whitelisted sites')) return;
     final cleaned = site.trim().toLowerCase();
     if (cleaned.isEmpty) return;
 
@@ -227,12 +301,14 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   Future<void> _removeDomain(String domain) async {
+    if (await _isLockedFor('remove domains')) return;
     await BlocklistManager.removeUserDomain(domain);
     await _loadData();
     await VpnController.removeSite(domain);
   }
 
   Future<void> _removeKeyword(String keyword) async {
+    if (await _isLockedFor('remove keywords')) return;
     await BlocklistManager.removeUserKeyword(keyword);
     await _loadData();
     await VpnController.removeKeyword(keyword);
@@ -282,6 +358,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   Future<void> _toggleApp(String packageName, bool isBlocked) async {
+    if (!isBlocked && await _isLockedFor('unblock apps')) return;
     setState(() {
       if (isBlocked) {
         _blockedPackages.add(packageName);
@@ -296,6 +373,8 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   Future<void> _showEditDialog(String value, String type) async {
+    // An edit removes the old entry, so it is locked like a removal
+    if (await _isLockedFor('edit rules') || !mounted) return;
     final TextEditingController editController = TextEditingController(
       text: value,
     );
@@ -397,7 +476,10 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   Future<void> _importFromFile() async {
+    // Importing replaces every list, so it could remove rules
+    if (await _isLockedFor('import a blocklist')) return;
     try {
+      AppLockService.expectExternalActivity();
       final result = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['json'],
@@ -426,6 +508,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   Future<void> _exportToFile() async {
     try {
       final jsonString = await BlocklistManager.exportToJson();
+      AppLockService.expectExternalActivity();
       final result = await FilePicker.saveFile(
         dialogTitle: 'Export Blocklist',
         fileName: Constants.blocklistFileName,
@@ -499,15 +582,61 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildDomainList(),
-          _buildKeywordList(),
-          _buildWhitelistList(),
-          _buildAppList(),
+          if (_isBlockingEnabled) _buildLockedBanner(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildDomainList(),
+                _buildKeywordList(),
+                _buildWhitelistList(),
+                _buildAppList(),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLockedBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const Key('blocking_locked_banner'),
+      width: double.infinity,
+      color: colorScheme.secondaryContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, color: colorScheme.onSecondaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Blocking is on. You can add rules, but removing or editing '
+              'them needs blocking turned off first.',
+              style: TextStyle(color: colorScheme.onSecondaryContainer),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Trailing button for a list entry that can only be removed while blocking
+  /// is off
+  Widget _buildRemoveButton(VoidCallback onRemove) {
+    if (_isBlockingEnabled) {
+      return IconButton(
+        icon: const Icon(Icons.lock_outline, color: Colors.grey),
+        tooltip: 'Locked while blocking is on',
+        onPressed: onRemove,
+      );
+    }
+    return IconButton(
+      icon: const Icon(Icons.delete, color: Colors.red),
+      onPressed: onRemove,
     );
   }
 
@@ -574,10 +703,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
                     return ListTile(
                       title: Text(domain),
                       onTap: () => _showEditDialog(domain, 'domain'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _removeDomain(domain),
-                      ),
+                      trailing: _buildRemoveButton(() => _removeDomain(domain)),
                     );
                   },
                 ),
@@ -633,9 +759,8 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
                     return ListTile(
                       title: Text(keyword),
                       onTap: () => _showEditDialog(keyword, 'keyword'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _removeKeyword(keyword),
+                      trailing: _buildRemoveButton(
+                        () => _removeKeyword(keyword),
                       ),
                     );
                   },
@@ -656,18 +781,23 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
                 child: TextField(
                   key: const Key('whitelist_input'),
                   controller: _whitelistController,
-                  decoration: const InputDecoration(
-                    labelText: 'Add whitelisted site (e.g. safe.com)',
-                    border: OutlineInputBorder(),
+                  // Whitelisting loosens blocking, so it waits until
+                  // blocking is off
+                  enabled: !_isBlockingEnabled,
+                  decoration: InputDecoration(
+                    labelText: _isBlockingEnabled
+                        ? 'Turn off blocking to add sites'
+                        : 'Add whitelisted site (e.g. safe.com)',
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 key: const Key('add_whitelist_button'),
-                icon: const Icon(
-                  Icons.add_circle,
-                  color: Colors.green,
+                icon: Icon(
+                  _isBlockingEnabled ? Icons.lock_outline : Icons.add_circle,
+                  color: _isBlockingEnabled ? Colors.grey : Colors.green,
                   size: 40,
                 ),
                 onPressed: () => _addWhitelist(_whitelistController.text),

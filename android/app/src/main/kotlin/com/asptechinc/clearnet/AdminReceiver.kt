@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 package com.asptechinc.clearnet
 
 import android.app.admin.DeviceAdminReceiver
@@ -6,40 +9,31 @@ import android.content.Intent
 import android.widget.Toast
 
 /**
- * AdminReceiver handles the Device Administration lifecycle events.
- * This class provides uninstall and disable protection by intercepting requests
- * to deactivate Device Admin privileges and prompting the user for a verification PIN.
+ * Asks for the PIN before device administrator access can be turned off, so
+ * ClearNet can't be uninstalled without it.
  */
 class AdminReceiver : DeviceAdminReceiver() {
 
     /**
-     * Intercepts requests to disable device admin privileges.
-     * Launches the PIN verification activity to prevent unauthorised deactivation/uninstallation.
-     *
-     * @param context The application context.
-     * @param intent The incoming disable request intent.
-     * @return A warning message displayed to the user in the system dialogue.
+     * The returned text is shown in the system's confirmation dialogue.
      */
     override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
-        // Trigger the PIN verification screen before allowing device admin to be deactivated
-        val pinIntent = Intent(context, PinVerificationActivity::class.java)
-        pinIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(pinIntent)
+        // Opens ClearNet on its uninstall PIN screen, on top of the system
+        // dialogue, unless the PIN was just entered
+        if (UninstallGuard.shouldProtect(context)) {
+            val pinIntent = Intent(context, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_VERIFY_UNINSTALL_PIN, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            context.startActivity(pinIntent)
+        }
 
-        // Return the warning message shown to the user while waiting for PIN entry
-        return "Enter your uninstall protection PIN to proceed."
+        return context.getString(R.string.uninstall_dialog_message)
     }
 
-    /**
-     * Called when the device admin privileges have been successfully disabled.
-     */
     override fun onDisabled(context: Context, intent: Intent) {
         Toast.makeText(context, "ClearNet has been disabled", Toast.LENGTH_SHORT).show()
     }
 
-    /**
-     * Called when the device admin privileges have been successfully enabled.
-     */
     override fun onEnabled(context: Context, intent: Intent) {
         Toast.makeText(context, "ClearNet is now a device admin", Toast.LENGTH_SHORT).show()
     }

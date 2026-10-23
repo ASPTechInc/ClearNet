@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notes disguise icon for Android 8 and later. The monochrome
+     layer is used for themed icons on Android 13 and later. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/disguise_notes_background" />
+    <foreground android:drawable="@drawable/ic_notes_foreground" />
+    <monochrome android:drawable="@drawable/ic_notes_foreground" />
+</adaptive-icon>

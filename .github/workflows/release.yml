@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+# SPDX-License-Identifier: MIT
+
 # This workflow manages production build and deployment to GitHub Releases
 # when a version tag (e.g. v1.0.0) is pushed. It is triggered by the 'push' event
 # for tags matching 'v*' to the 'main' GitHub branch.
@@ -28,22 +31,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          
+
           echo "ANDROID_HOME: ${ANDROID_HOME:-not set}"
           echo "ANDROID_SDK_ROOT: ${ANDROID_SDK_ROOT:-not set}"
-          
+
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-          
+
           if [[ -z "$SDK" ]]; then
             echo "::error::Android SDK environment variable is not set"
             exit 1
           fi
-          
+
           if [[ ! -d "$SDK" ]]; then
             echo "::error::Android SDK directory does not exist: $SDK"
             exit 1
           fi
-          
+
           echo "Android SDK found:"
           ls -ld "$SDK"
 
@@ -65,6 +68,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: "3.47.7"
           channel: "stable"
           cache: true
 
@@ -89,7 +93,7 @@ jobs:
           KEYSTORE_CONTENT: ${{ secrets.KEYSTORE_CONTENT }}
         run: |
           set -euo pipefail
-          
+
           # Validate that GitHub injected the secrets.
           for name in \
             KEYSTORE_FILE_NAME \
@@ -103,21 +107,21 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "Signing secrets are available."
-          
+
           # Decode keystore
           KEYSTORE_PATH="android/app/$KEYSTORE_FILE_NAME"
-          
+
           printf '%s' "$KEYSTORE_CONTENT" \
             | base64 --decode \
             > "$KEYSTORE_PATH"
-          
+
           if [[ ! -s "$KEYSTORE_PATH" ]]; then
             echo "::error::Decoded keystore is empty"
             exit 1
           fi
-          
+
           # Create signing configuration.
           cat > android/app/keystore.properties <<EOF
           storeFile=$KEYSTORE_FILE_NAME
@@ -125,26 +129,26 @@ jobs:
           keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
           EOF
-          
+
           chmod 600 android/app/keystore.properties
-          
+
           echo "Android signing configuration prepared."
 
       - name: Build release APK and bundle
         run: |
           set -euo pipefail
-          
+
           flutter build apk --release
           flutter build appbundle --release
-          
+
           APK="build/app/outputs/flutter-apk/app-release.apk"
           AAB="build/app/outputs/bundle/release/app-release.aab"
-          
+
           if [[ ! -f "$APK" ]]; then
             echo "::error::Release APK was not created"
             exit 1
           fi
-          
+
           if [[ ! -f "$AAB" ]]; then
             echo "::error::Release AAB was not created"
             exit 1
@@ -155,7 +159,6 @@ jobs:
           cp "$AAB" ClearNet.aab
         env:
           GITHUB_TOKEN: ${{ secrets.APP_GITHUB_TOKEN }}
-
 
       - name: Upload APK artefact
         if: ${{ !env.ACT }} # Accounts for 'act' not having a ACTIONS_RUNTIME_TOKEN
@@ -214,12 +217,12 @@ jobs:
         id: get_version
         run: |
           VERSION=$(cat version.txt)
-          
+
           if [[ -z "$VERSION" ]]; then 
             echo "::error::version.txt is empty"
             exit 1
           fi
-          
+
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           mv ClearNet.apk ClearNet-v$VERSION.apk
           mv ClearNet.aab ClearNet-v$VERSION.aab

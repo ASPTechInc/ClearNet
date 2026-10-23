@@ -20,4 +20,8 @@
 
     <color name="error">#D32F2F</color>
     <color name="error_bg">#FFEBEE</color>
+
+    <!-- Disguise icon backgrounds -->
+    <color name="disguise_calculator_background">#37474F</color>
+    <color name="disguise_notes_background">#FFB300</color>
 </resources>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -239,7 +242,9 @@ void main() {
     await tester.scrollUntilVisible(
       replayTile,
       200,
-      scrollable: find.byType(Scrollable).last,
+      // The Settings page itself. The DNS text field inside it has its own
+      // scrollable, but widgets are found parent first, so .first is the page.
+      scrollable: find.byType(Scrollable).first,
     );
     await settle(tester);
     tabHistory.clear();
@@ -301,7 +306,8 @@ void main() {
       await tester.scrollUntilVisible(
         replayTile,
         200,
-        scrollable: find.byType(Scrollable).last,
+        // The Settings page itself (see the test above)
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(replayTile);
       await settle(tester);

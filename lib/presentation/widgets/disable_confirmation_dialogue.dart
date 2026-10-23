@@ -1,9 +1,15 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:math';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
 
+/// The challenge shown before blocking can be turned off: three long
+/// sentences of hard words that must be typed exactly. Any mistake starts it
+/// again with new sentences. Closes with true if passed, false if given up.
 class DisableConfirmationDialogue extends StatefulWidget {
   const DisableConfirmationDialogue({super.key});
 
@@ -79,12 +85,8 @@ class _DisableConfirmationDialogueState
   void _handleNext() {
     final input = _inputController.text.trim();
     if (input.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please type the sentence before continuing.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // Shown in the dialogue, as a SnackBar would appear behind it
+      setState(() => _errorMessage = 'Type the sentence before continuing.');
       return;
     }
 
@@ -169,7 +171,7 @@ class _DisableConfirmationDialogueState
               const SizedBox(height: 16),
 
               Text(
-                'Disable Protection Confirmation',
+                'Turn off blocking',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -212,7 +214,8 @@ class _DisableConfirmationDialogueState
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: colorScheme.outlineVariant),
                 ),
-                child: SelectableText(
+                // Plain text, so the sentence can't be copied and pasted
+                child: Text(
                   _sentences[_currentStep],
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
@@ -228,6 +231,10 @@ class _DisableConfirmationDialogueState
                 minLines: 3,
                 maxLines: 5,
                 autofocus: true,
+                // No pasting, and no autocorrect changing the typed words
+                enableInteractiveSelection: false,
+                autocorrect: false,
+                enableSuggestions: false,
                 style: theme.textTheme.bodyMedium,
                 decoration: InputDecoration(
                   hintText: 'Type here...',

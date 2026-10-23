@@ -1,15 +1,18 @@
+# SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+# SPDX-License-Identifier: MIT
+
 # This workflow is currently disabled in GitHub Actions
 #
 name: FOSS Compliance Dependency Audit
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   schedule:
-    # Run periodically every week to check for upstream transient dependency shifts
-    - cron: '0 0 * * 0'
+    # Weekly, to catch changes in upstream dependencies
+    - cron: "0 0 * * 0"
 
 jobs:
   audit:
@@ -21,13 +24,13 @@ jobs:
       - name: Setup Java Development Kit Environment
         uses: actions/setup-java@v6
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: "zulu"
+          java-version: "17"
 
       - name: Setup Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install Project Flutter Package Dependencies
@@ -36,5 +39,18 @@ jobs:
       - name: Generate Android Gradle Wrapper
         run: flutter build apk --config-only
 
-      - name: Execute FOSS Compliance Automated Audit Script
+      - name: Run FOSS audit script
         run: ./scripts/foss_audit.sh
+
+      - name: Check REUSE licensing compliance
+        run: pipx run reuse lint
+
+      - name: Lint F-Droid metadata
+        run: |
+          pipx install fdroidserver
+          # fdroid lint validates Categories against fdroiddata's list, so fetch it
+          mkdir -p fdroid-lint/config fdroid-lint/metadata
+          curl -sfL https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/categories.yml \
+            | grep -vE '^\s+icon:' > fdroid-lint/config/categories.yml
+          cp metadata/com.asptechinc.clearnet.yml fdroid-lint/metadata/
+          cd fdroid-lint && fdroid lint com.asptechinc.clearnet

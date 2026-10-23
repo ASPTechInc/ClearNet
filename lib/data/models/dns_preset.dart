@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 class DnsPreset {
   const DnsPreset({required this.id, required this.label, required this.ip});
 

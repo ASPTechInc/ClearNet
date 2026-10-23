@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 
@@ -6,7 +9,6 @@ import 'package:flutter/material.dart';
 
 // Project imports:
 import 'package:clearnet/data/models/guide.dart';
-import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/guide_manager.dart';
 
 class GuideScreen extends StatefulWidget {
@@ -21,54 +23,18 @@ class _GuideScreenState extends State<GuideScreen> with WidgetsBindingObserver {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final GlobalKey _guidePageKey = GlobalKey();
-  final GlobalKey _guideControlsKey = GlobalKey();
-  Timer? _tourTimer;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    AppTourManager.permissionsCheckNotifier.addListener(_onPermissionsUpdated);
     _guideFuture = GuideManager.loadGuide();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndStartAppTour();
-    });
   }
 
   @override
   void dispose() {
-    _tourTimer?.cancel();
-    AppTourManager.permissionsCheckNotifier.removeListener(
-      _onPermissionsUpdated,
-    );
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkAndStartAppTour();
-    }
-  }
-
-  void _onPermissionsUpdated() {
-    _checkAndStartAppTour();
-  }
-
-  void _checkAndStartAppTour() {
-    _tourTimer?.cancel();
-    _tourTimer = Timer(const Duration(milliseconds: 500), () async {
-      if (!mounted) return;
-      await AppTourManager.startAppTourIfReady(
-        context: context,
-        keys: [_guidePageKey, _guideControlsKey],
-        tourKey: AppTourManager.guideTourKey,
-      );
-    });
   }
 
   void _nextItem(int totalPages) {
@@ -156,7 +122,7 @@ class _GuideScreenState extends State<GuideScreen> with WidgetsBindingObserver {
                 ),
                 const Divider(height: 1),
 
-                // 2. Page View (Content Layout)
+                // Content layout)
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -189,100 +155,78 @@ class _GuideScreenState extends State<GuideScreen> with WidgetsBindingObserver {
                           ],
                         ),
                       );
-
-                      if (index == 0) {
-                        return AppTourManager.appTourItem(
-                          key: _guidePageKey,
-                          title: 'Guide Recommendations',
-                          description:
-                              'Swipe or tap Next to read tips, rules and '
-                              'best practices for preventing bypasses.',
-                          child: content,
-                        );
-                      }
-
                       return content;
                     },
                   ),
                 ),
 
-                // 3. Footer (Controls Layout)
+                // Footer (Controls Layout)
                 const Divider(height: 1),
-                AppTourManager.appTourItem(
-                  key: _guideControlsKey,
-                  isLastStep: true,
-                  hideSkipButton: true,
-                  title: 'Guide Controls',
-                  description:
-                      'Use back and next buttons or page indicators to '
-                      'navigate through the guide.',
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        // Back Button Layout wrapped in Visibility to 
-                        //prevent horizontal space overflow constraints
-                        Visibility(
-                          visible: _currentPage > 0,
-                          maintainState: true,
-                          maintainAnimation: true,
-                          maintainSize: true,
-                          child: IconButton(
-                            onPressed: _currentPage > 0
-                                ? () => _pageController.previousPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  )
-                                : null,
-                            icon: const Icon(Icons.arrow_back),
-                          ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      // Back Button Layout wrapped in Visibility to
+                      //prevent horizontal space overflow constraints
+                      Visibility(
+                        visible: _currentPage > 0,
+                        maintainState: true,
+                        maintainAnimation: true,
+                        maintainSize: true,
+                        child: IconButton(
+                          onPressed: _currentPage > 0
+                              ? () => _pageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                )
+                              : null,
+                          icon: const Icon(Icons.arrow_back),
                         ),
+                      ),
 
-                        // Flexible wrapper bounds horizontal footprint of 
-                        //progress indicators cleanly
-                        Expanded(
-                          child: Center(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: List.generate(pages.length, (index) {
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    height: 8,
-                                    width: _currentPage == index ? 24 : 8,
-                                    decoration: BoxDecoration(
-                                      color: _currentPage == index
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.primary
-                                                .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  );
-                                }),
-                              ),
+                      // Flexible wrapper bounds horizontal footprint of
+                      //progress indicators cleanly
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: List.generate(pages.length, (index) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  height: 8,
+                                  width: _currentPage == index ? 24 : 8,
+                                  decoration: BoxDecoration(
+                                    color: _currentPage == index
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.primary.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                );
+                              }),
                             ),
                           ),
                         ),
+                      ),
 
-                        // Next/Done Selection Action
-                        TextButton(
-                          onPressed: () => _nextItem(pages.length),
-                          child: Text(
-                            _currentPage == pages.length - 1
-                                ? 'Got it'
-                                : 'Next',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                      // Next/Done Selection Action
+                      TextButton(
+                        onPressed: () => _nextItem(pages.length),
+                        child: Text(
+                          _currentPage == pages.length - 1 ? 'Got it' : 'Next',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],

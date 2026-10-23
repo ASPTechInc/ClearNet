@@ -1,9 +1,14 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
 
+/// Asks the user to turn on a permission in Android's settings, then closes by
+/// itself once it's been granted.
 class PermissionRequirementDialogue extends StatefulWidget {
   const PermissionRequirementDialogue({
     super.key,
@@ -66,6 +71,8 @@ class _PermissionRequirementDialogueState
     }
   }
 
+  // Android doesn't notify the app when the user changes these settings, so
+  // check regularly instead, and stop after 3 minutes
   void _startPollingTimer() {
     _stopPollingTimer();
     _pollingStartTime = DateTime.now();

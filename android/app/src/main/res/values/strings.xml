@@ -2,5 +2,10 @@
     <string name="app_name">ClearNet</string>
     <string name="app_name_calculator">Calculator</string>
     <string name="app_name_notes">Notes</string>
-    <string name="accessibility_service_description">ClearNet Accessibility Service</string>
+    <!-- The next three strings are shown on the system screens that can remove
+         ClearNet's protection. UninstallGuard looks for them to recognise those
+         screens in any language, so keep each one unique. -->
+    <string name="accessibility_service_description">Lets ClearNet close blocked apps, check browser pages for blocked content, and stop its protection being turned off without the uninstall PIN.</string>
+    <string name="device_admin_description">Stops ClearNet being removed without the uninstall PIN.</string>
+    <string name="uninstall_dialog_message">Enter your uninstall protection PIN to proceed.</string>
 </resources>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 
@@ -12,7 +15,7 @@ import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
 class BottomNavBar extends StatefulWidget {
-  const BottomNavBar({super.key,  required this.controller});
+  const BottomNavBar({super.key, required this.controller});
 
   final PersistentTabController controller;
 
@@ -21,7 +24,7 @@ class BottomNavBar extends StatefulWidget {
 }
 
 class _BottomNavBarState extends State<BottomNavBar> {
-    void jumpToTab(int index) {
+  void jumpToTab(int index) {
     widget.controller.jumpToTab(index);
   }
 
@@ -89,7 +92,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   }
 }
 
-/// A wrapper widget that enforces PIN lock verification before displaying 
+/// A wrapper widget that enforces PIN lock verification before displaying
 /// its [child].
 /// If lock settings is enabled and [AppSession.isSettingsUnlocked] is false,
 /// [PinLockScreen] is displayed until the user enters the correct PIN.
@@ -134,6 +137,7 @@ class _PinGuardedTabState extends State<PinGuardedTab> {
         final isLocked = snapshot.data ?? false;
 
         if (isLocked && !AppSession.isSettingsUnlocked) {
+          // Settings use the app PIN; there's no separate Settings PIN
           return PinLockScreen(
             pinKey: Constants.appPinKey,
             title: 'Verify App PIN',

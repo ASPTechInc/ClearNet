@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 
@@ -69,8 +72,10 @@ void main() {
       expect(actionPressed, true);
       expect(find.text('Confirm enabling'), findsOneWidget);
       expect(
-        find.textContaining('Once enabled in settings, return to this app '
-        'or tap "Confirm enabling"'),
+        find.textContaining(
+          'Once enabled in settings, return to this app '
+          'or tap "Confirm enabling"',
+        ),
         findsOneWidget,
       );
     });
@@ -112,59 +117,56 @@ void main() {
       expect(find.text('Open Settings'), findsOneWidget);
     });
 
-    testWidgets(
-      'dismisses dialogue returning true when permission is '
-      'granted on confirm click',
-      (WidgetTester tester) async {
-        bool permissionGranted = false;
-        bool? dialogueResult;
+    testWidgets('dismisses dialogue returning true when permission is '
+        'granted on confirm click', (WidgetTester tester) async {
+      bool permissionGranted = false;
+      bool? dialogueResult;
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () async {
-                    dialogueResult = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => PermissionRequirementDialogue(
-                        title: 'Action required',
-                        description: 'Enable Accessibility',
-                        initialButtonText: 'Enable service',
-                        clickedButtonText: 'Confirm enabling',
-                        exitButtonText: 'Exit app',
-                        onActionPressed: () async {},
-                        onCheckPermission: () async => permissionGranted,
-                        onExitPressed: () => Navigator.pop(context, false),
-                        notEnabledMessage: 'Service not enabled',
-                      ),
-                    );
-                  },
-                  child: const Text('Open Dialogue'),
-                ),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  dialogueResult = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => PermissionRequirementDialogue(
+                      title: 'Action required',
+                      description: 'Enable Accessibility',
+                      initialButtonText: 'Enable service',
+                      clickedButtonText: 'Confirm enabling',
+                      exitButtonText: 'Exit app',
+                      onActionPressed: () async {},
+                      onCheckPermission: () async => permissionGranted,
+                      onExitPressed: () => Navigator.pop(context, false),
+                      notEnabledMessage: 'Service not enabled',
+                    ),
+                  );
+                },
+                child: const Text('Open Dialogue'),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.tap(find.text('Open Dialogue'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Dialogue'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Enable service'), findsOneWidget);
+      expect(find.text('Enable service'), findsOneWidget);
 
-        // First tap opens settings / changes button
-        await tester.tap(find.text('Enable service'));
-        await tester.pumpAndSettle();
+      // First tap opens settings / changes button
+      await tester.tap(find.text('Enable service'));
+      await tester.pumpAndSettle();
 
-        // Grant permission and tap "Confirm enabling"
-        permissionGranted = true;
-        await tester.tap(find.text('Confirm enabling'));
-        await tester.pumpAndSettle();
+      // Grant permission and tap "Confirm enabling"
+      permissionGranted = true;
+      await tester.tap(find.text('Confirm enabling'));
+      await tester.pumpAndSettle();
 
-        expect(dialogueResult, true);
-        expect(find.text('Action required'), findsNothing);
-      },
-    );
+      expect(dialogueResult, true);
+      expect(find.text('Action required'), findsNothing);
+    });
 
     testWidgets(
       'dismisses dialogue returning true via polling timer when permission '

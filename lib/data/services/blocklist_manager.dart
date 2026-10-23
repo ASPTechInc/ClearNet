@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 import 'dart:convert';
@@ -13,6 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Project imports:
 import 'package:clearnet/shared/utilities/constants.dart';
 
+/// Keeps the blocked domains, keywords and whitelist.
+///
+/// What the user adds is kept under the `user_*` keys. buildFinalBlocklist()
+/// merges those with the built-in blocklist asset into the final keys, which
+/// the VPN and accessibility service read. A copy is also written to
+/// blocklist.json in the app's documents folder.
 class BlocklistManager {
   // Internal keys for user-added items to keep them separate from assets
   static const _userDomainsKey = 'user_blocked_domains';
@@ -62,17 +71,6 @@ class BlocklistManager {
         await _prefs.setStringList(_userDomainsKey, domains);
         await _prefs.setStringList(_userKeywordsKey, keywords);
         await _prefs.setStringList(_userWhitelistKey, whitelist);
-      }
-    }
-
-    // If whitelist key was never set (e.g., upgraded from older app version), 
-    //seed from assets
-    if (savedWhitelist == null &&
-        (await _prefs.getStringList(_userWhitelistKey) ?? []).isEmpty) {
-      final assetData = await _loadAssetData();
-      final defaultWhitelist = assetData['whitelist'] ?? [];
-      if (defaultWhitelist.isNotEmpty) {
-        await _prefs.setStringList(_userWhitelistKey, defaultWhitelist);
       }
     }
 
@@ -286,8 +284,8 @@ class BlocklistManager {
     final userWhitelist = await loadUserWhitelist();
 
     final savedFinal = await _prefs.getStringList(_finalDomainsKey);
-    // If user explicitly cleared content (all user lists are empty and 
-    //final list was saved as empty), preserve empty
+    // After "Clear content" all lists are empty. Keep them empty here,
+    // otherwise the built-in blocklist would be merged back in
     if (userDomains.isEmpty &&
         userKeywords.isEmpty &&
         userWhitelist.isEmpty &&
@@ -309,7 +307,7 @@ class BlocklistManager {
     await _prefs.setStringList(_finalWhitelistKey, allWhitelist.toList());
   }
 
-  /// Reset user domains, keywords and whitelist to default data from asset 
+  /// Reset user domains, keywords and whitelist to default data from asset
   /// blocklist
   static Future<void> resetToDefault() async {
     final assetData = await _loadAssetData();
@@ -347,19 +345,28 @@ class BlocklistManager {
     unawaited(_saveToFile());
   }
 
-  /// Check domain against merged blocklist + keywords
+  /// Whether [domain] should be blocked. Uses the same rules as the Android
+  /// side (DomainRules.kt): a blocked or whitelisted site matches that domain
+  /// and its subdomains only, while keywords match anywhere.
   static Future<bool> shouldBlock(String domain) async {
-    final lowerDomain = domain.toLowerCase();
+    final name = domain.toLowerCase();
 
     final domains = await _prefs.getStringList(_finalDomainsKey) ?? [];
     final keywords = await _prefs.getStringList(_finalKeywordsKey) ?? [];
     final whitelist = await _prefs.getStringList(_finalWhitelistKey) ?? [];
 
-    if (whitelist.any((w) => lowerDomain.contains(w))) return false;
-    if (domains.any((s) => lowerDomain.contains(s))) return true;
-    if (keywords.any((k) => lowerDomain.contains(k))) return true;
+    if (whitelist.any((w) => matchesDomain(name, w))) return false;
+    if (domains.any((s) => matchesDomain(name, s))) return true;
+    return keywords.any((k) => k.isNotEmpty && name.contains(k.toLowerCase()));
+  }
 
-    return false;
+  /// True if [host] is [rule] or one of its subdomains, so "x.com" covers
+  /// "www.x.com" but not "box.com".
+  static bool matchesDomain(String host, String rule) {
+    final site = rule.trim().toLowerCase();
+    if (site.isEmpty) return false;
+    final name = host.toLowerCase();
+    return name == site || name.endsWith('.$site');
   }
 
   /// Export user settings to JSON string
@@ -385,14 +392,7 @@ class BlocklistManager {
       final data = json.decode(jsonString) as Map<String, dynamic>;
       final List<String> domains = List<String>.from(data['domains'] ?? []);
       final List<String> keywords = List<String>.from(data['keywords'] ?? []);
-      List<String> whitelist = List<String>.from(data['whitelist'] ?? []);
-
-      // If imported JSON format is missing 'whitelist' key (from prior app 
-      //version), fallback to asset default
-      if (!data.containsKey('whitelist')) {
-        final assetData = await _loadAssetData();
-        whitelist = assetData['whitelist'] ?? [];
-      }
+      final List<String> whitelist = List<String>.from(data['whitelist'] ?? []);
 
       await _prefs.setStringList(
         _userDomainsKey,
