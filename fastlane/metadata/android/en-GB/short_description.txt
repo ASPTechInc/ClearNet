@@ -1,1 +1,1 @@
-FOSS parental control app with local VPN site filtering.
+FOSS content-control app that blocks harmful sites and apps.

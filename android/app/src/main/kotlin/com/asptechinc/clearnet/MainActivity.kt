@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 package com.asptechinc.clearnet
 
 import android.content.Intent
@@ -17,39 +20,38 @@ import io.flutter.plugin.common.MethodChannel
 import androidx.core.net.toUri
 
 /**
- * MainActivity serves as the main entrance point to the application, extending FlutterActivity.
- * It establishes a MethodChannel to facilitate communication between the Kotlin native layer
- * and the Dart/Flutter presentation layer, routing actions such as VPN lifecycle management,
- * package inventory collection and system settings navigation.
+ * Hosts the Flutter UI and handles method-channel calls from Dart, such as
+ * starting the VPN, listing installed apps and opening system settings.
  */
 class MainActivity : FlutterActivity() {
     
-    private val CHANNEL = "app_control/channel"
-    private var pendingShowBlocked = false
-    private val CONFIRMATION_REQUEST_CODE = 1001
-    private var pendingConfirmationResult: MethodChannel.Result? = null
+    companion object {
+        const val EXTRA_VERIFY_UNINSTALL_PIN = "verifyUninstallPin"
+    }
 
-    /**
-     * Set up native method handlers to receive calls from Flutter Dart side.
-     */
+    private val CHANNEL = "app_control/channel"
+    // Set when an intent arrives before Flutter is ready, until Flutter asks
+    private var pendingAction: String? = null
+    private val VPN_PERMISSION_REQUEST_CODE = 1002
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startVpn" -> {
-                    // Check if system VPN permissions are granted; if not, triggers the system permission dialogue
+                    // Ask for VPN permission first if it hasn't been granted. The
+                    // VPN then starts in onActivityResult once it's allowed.
                     val intent = VpnService.prepare(this)
                     if (intent != null) {
-                        startActivity(intent)
+                        startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
                     } else {
                         startService(Intent(this, SafeVpnService::class.java))
                     }
                     result.success(true)
                 }
                 "stopVpn" -> {
-                    // Stops the background SafeVpnService instance
-                    stopService(Intent(this, SafeVpnService::class.java))
+                    startService(Intent(this, SafeVpnService::class.java).setAction(SafeVpnService.ACTION_STOP))
                     result.success(true)
                 }
                 "blockSite" -> {
@@ -95,22 +97,18 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "checkInitialAction" -> {
-                    // Invoked by Flutter on startup to check if the app was launched due to a block event
-                    if (pendingShowBlocked) {
-                        pendingShowBlocked = false
-                        result.success("showBlocked")
-                    } else {
-                        result.success(null)
-                    }
+                    // Flutter asks on startup whether the app was opened by a block
+                    // event or a request to remove device admin access
+                    result.success(pendingAction)
+                    pendingAction = null
                 }
                 "openAccessibilitySettings" -> {
-                    // Redirects the user directly to system accessibility service parameters
                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                     startActivity(intent)
                     result.success(true)
                 }
                 "getInstalledApps" -> {
-                    // Fetches lists of user-installed packages to display in the block options
+                    // Installed apps for the app-blocking screen
                     val apps = getInstalledApps()
                     result.success(apps)
                 }
@@ -143,6 +141,20 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(map)
                 }
+                "setUninstallProtection" -> {
+                    UninstallGuard.setEnabled(this, call.argument<Boolean>("enabled") ?: false)
+                    result.success(true)
+                }
+                "allowProtectedScreens" -> {
+                    UninstallGuard.allowProtectedScreens()
+                    result.success(true)
+                }
+                "closeApp" -> {
+                    // Ends the activity and removes it from recents, so the next
+                    // launch starts fresh (and asks for the app PIN if set)
+                    finishAndRemoveTask()
+                    result.success(true)
+                }
                 "goHome" -> {
                     val intent = Intent(Intent.ACTION_MAIN)
                     intent.addCategory(Intent.CATEGORY_HOME)
@@ -150,32 +162,22 @@ class MainActivity : FlutterActivity() {
                     startActivity(intent)
                     result.success(true)
                 }
-                "showDisableConfirmation" -> {
-                    val intent = Intent(this, ConfirmationActivity::class.java)
-                    startActivityForResult(intent, CONFIRMATION_REQUEST_CODE)
-                    pendingConfirmationResult = result
-                }
                 else -> result.notImplemented()
             }
         }
         
-        // Check if the current incoming intent signals showing a blocked screen page
         handleIntent(intent)
     }
 
     /**
-     * Scans and compiles a sorted list of non-system packages installed on the device.
-     * Exposes app labels and package identifiers to the Flutter settings UI.
-     * 
-     * Note: On Android 11+ (API 30+), this requires <queries> in the manifest
-     * or the QUERY_ALL_PACKAGES permission to see apps other than the system ones.
+     * Returns installed non-system apps with a launcher icon, sorted by name.
+     * On Android 11+ this relies on the <queries> element in the manifest.
      */
     private fun getInstalledApps(): List<Map<String, String>> {
         val pm = packageManager
         val mainIntent = Intent(Intent.ACTION_MAIN, null)
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
         
-        // Query for apps with a launcher activity, which respects the <queries> element in the manifest
         val apps = pm.queryIntentActivities(mainIntent, 0)
         val appList = mutableListOf<Map<String, String>>()
 
@@ -185,7 +187,7 @@ class MainActivity : FlutterActivity() {
             val packageName = app.packageName
             val isSystem = (app.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
 
-            // Include all user-installed applications, plus specific safe-browsing targets like Chrome
+            // Chrome is preinstalled on many devices, so allow it to be blocked too
             if (!isSystem || packageName == "com.android.chrome") {
                 appList.add(mapOf(
                     "name" to name,
@@ -196,9 +198,6 @@ class MainActivity : FlutterActivity() {
         return appList.distinctBy { it["packageName"] }.sortedBy { it["name"] }
     }
 
-    /**
-     * Intercepts intents delivered to an already active instance of the activity.
-     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
@@ -206,29 +205,28 @@ class MainActivity : FlutterActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CONFIRMATION_REQUEST_CODE) {
-            pendingConfirmationResult?.success(resultCode == RESULT_OK)
-            pendingConfirmationResult = null
+        if (requestCode == VPN_PERMISSION_REQUEST_CODE && resultCode == RESULT_OK) {
+            startService(Intent(this, SafeVpnService::class.java))
         }
     }
 
     /**
-     * Evaluates incoming intent bundles to invoke corresponding view routes on the Flutter frontend.
+     * Shows the Flutter blocked page if the intent came from a block event.
      */
     private fun handleIntent(intent: Intent) {
-        if (intent.getBooleanExtra("showBlocked", false)) {
-            flutterEngine?.dartExecutor?.binaryMessenger?.let {
-                MethodChannel(it, CHANNEL).invokeMethod("showBlockedPage", null)
-            } ?: run {
-                // Cache the block flag if the engine is not fully attached or initialised yet
-                pendingShowBlocked = true
-            }
+        val (action, method) = when {
+            intent.getBooleanExtra("showBlocked", false) -> "showBlocked" to "showBlockedPage"
+            intent.getBooleanExtra(EXTRA_VERIFY_UNINSTALL_PIN, false) -> "verifyUninstallPin" to "showUninstallPin"
+            else -> return
+        }
+        flutterEngine?.dartExecutor?.binaryMessenger?.let {
+            MethodChannel(it, CHANNEL).invokeMethod(method, null)
+        } ?: run {
+            // Flutter isn't ready yet, so remember this until it asks
+            pendingAction = action
         }
     }
 
-    /**
-     * Checks if the specific Accessibility Service is currently enabled in system settings.
-     */
     private fun isAccessibilityServiceEnabled(context: Context, service: Class<out AccessibilityService>): Boolean {
         val expectedComponentName = ComponentName(context, service)
         val enabledServicesSetting = Settings.Secure.getString(
@@ -249,25 +247,7 @@ class MainActivity : FlutterActivity() {
         return false
     }
 
-    private fun setAppDisguise(disguise: String) {
-        val pm = packageManager
-        val pkgName = packageName
-        
-        val components = mapOf(
-            "none" to ComponentName(pkgName, "$pkgName.MainActivity"),
-            "calculator" to ComponentName(pkgName, "$pkgName.CalculatorActivity"),
-            "notes" to ComponentName(pkgName, "$pkgName.NotesActivity")
-        )
-
-        components.forEach { (name, component) ->
-            val state = if (name == disguise) {
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            } else {
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            }
-            pm.setComponentEnabledSetting(component, state, PackageManager.DONT_KILL_APP)
-        }
-    }
+    private fun setAppDisguise(disguise: String) = AppDisguise.apply(this, disguise)
 
     private fun isIgnoringBatteryOptimizations(): Boolean {
         val pm = getSystemService(POWER_SERVICE) as PowerManager

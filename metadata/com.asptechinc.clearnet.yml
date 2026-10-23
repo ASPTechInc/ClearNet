@@ -5,19 +5,12 @@ License: MIT
 AuthorName: ASPTechnologies Incorporation
 SourceCode: https://github.com/asptechinc/clearnet
 IssueTracker: https://github.com/asptechinc/clearnet/issues
-Changelog: https://github.com/asptechinc/clearnet/blob/main/CHANGELOG.md
+Changelog: https://github.com/asptechinc/clearnet/blob/HEAD/CHANGELOG.md
+Donate: https://buymeacoffee.com/asptechinc
 
 AutoName: ClearNet
-Summary: Simple, fast and secure web browser with built-in ad blocker
-Description: |-
-  ClearNet is a simple, fast and secure web browser with built-in ad blocker
-  and privacy features.
-
-  Features:
-  * Built-in ad blocker and tracker protection
-  * Fast and lightweight browsing experience
-  * Secure storage and local authentication support
-  * Privacy-focused with zero user tracking
+# Summary, description, screenshots and changelogs are read from
+# fastlane/metadata/android/ in the source repository.
 
 RepoType: git
 Repo: https://github.com/asptechinc/clearnet.git
@@ -28,14 +21,24 @@ Builds:
     commit: v1.0.0
     sudo:
       - apt-get update
-      - apt-get install -y openjdk-17-jdk
-    flutter: 3.29.0
-    init:
-      - flutter pub get
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -a
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@3.47.7
+    prebuild:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
     build:
-      - flutter build apk --release --build-name=1.0.0 --build-number=1
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --build-name=$$VERSION$$ --build-number=$$VERCODE$$
+        --dart-define=FDROID_BUILD=true
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
 CurrentVersion: 1.0.0
 CurrentVersionCode: 1

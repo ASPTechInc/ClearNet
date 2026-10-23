@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 
@@ -308,7 +311,7 @@ class AppTourManager {
     if (!isBatteryOptimised) return false;
 
     // In the persistent tab layout, a screen can be mounted and visible without
-    // being the current route from the Navigator perspective. We only require 
+    // being the current route from the Navigator perspective. We only require
     // it to still be mounted and to have rendered targets before starting.
     if (!context.mounted || !isOnTab()) return false;
 
@@ -330,21 +333,6 @@ class AppTourManager {
     _startShowcase(keys, onFinish);
     await prefs.setBool(keyToUse, true);
     return true;
-  }
-
-  /// Starts the showcase walkthrough if the user hasn't seen it yet.
-  static Future<void> startAppTourIfNeeded(
-    List<GlobalKey> keys, {
-    String? tourKey,
-  }) async {
-    ensureRegistration();
-    final keyToUse = tourKey ?? _appTourCompletedKey;
-    final prefs = SharedPreferencesAsync();
-    final hasSeen = await prefs.getBool(keyToUse) ?? false;
-    if (!hasSeen && keys.isNotEmpty) {
-      startAppTour(keys);
-      await prefs.setBool(keyToUse, true);
-    }
   }
 
   /// Resets the showcase tour state so it can be played again from

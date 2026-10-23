@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:convert';
 import 'dart:io';
@@ -18,8 +21,10 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
+import 'package:clearnet/data/services/pin_service.dart';
 import 'package:clearnet/presentation/screens/settings_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
+import 'package:clearnet/shared/utilities/helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +39,8 @@ void main() {
       await SharedPreferencesAsync().clear();
       SharedPreferences.setMockInitialValues({});
       FlutterSecureStorage.setMockInitialValues({});
+      PinService.iterations = 1000;
+      AppSession.isSettingsUnlocked = false;
       PackageInfo.setMockInitialValues(
         appName: Constants.appName,
         packageName: 'com.example.clearnet',
@@ -157,37 +164,121 @@ void main() {
       },
     );
 
-    testWidgets('App PIN and Lock settings with PIN relationship test', (
-      WidgetTester tester,
-    ) async {
+    /// Saves a hashed app PIN and sets the two switches' stored state.
+    Future<void> seedLocks(
+      WidgetTester tester, {
+      required bool appLock,
+      bool lockSettings = false,
+    }) async {
+      await tester.runAsync(
+        () => PinService.savePin(Constants.appPinKey, '123456789'),
+      );
+      await const FlutterSecureStorage().write(
+        key: Constants.appLockEnabledKey,
+        value: '$appLock',
+      );
+      await SharedPreferencesAsync().setBool(
+        Constants.lockSettingsKey,
+        lockSettings,
+      );
+    }
+
+    /// Shows Settings scrolled so the switch titled [title] is visible.
+    Future<void> showSecurity(
+      WidgetTester tester, {
+      String title = 'Lock settings with PIN',
+    }) async {
       await tester.pumpWidget(
-        const MaterialApp(home: SettingsScreen(key: Key('app_pin_rel_test'))),
+        const MaterialApp(home: SettingsScreen(key: Key('security_test'))),
       );
       await tester.pumpAndSettle();
-
-      final setAppPinFinder = find.widgetWithText(
-        SwitchListTile,
-        'Set app PIN',
-      );
       await tester.scrollUntilVisible(
-        setAppPinFinder,
+        find.widgetWithText(SwitchListTile, title),
         200.0,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
-      expect(setAppPinFinder, findsOneWidget);
+    }
 
-      final lockSettingsFinder = find.widgetWithText(
-        SwitchListTile,
-        'Lock settings with PIN',
+    bool switchValue(WidgetTester tester, String title) => tester
+        .widget<SwitchListTile>(find.widgetWithText(SwitchListTile, title))
+        .value;
+
+    testWidgets('Lock settings cannot be turned on until Set app PIN is on', (
+      WidgetTester tester,
+    ) async {
+      await showSecurity(tester);
+
+      await tester.tap(
+        find.widgetWithText(SwitchListTile, 'Lock settings with PIN'),
       );
-      expect(lockSettingsFinder, findsOneWidget);
-
-      // Toggling Lock settings when App PIN is not set shows SnackBar
-      await tester.tap(lockSettingsFinder);
       await tester.pump();
 
-      expect(find.text('Please set an App PIN first'), findsOneWidget);
+      expect(find.text('Turn on "Set app PIN" first'), findsOneWidget);
+      expect(find.text('Set App PIN'), findsNothing);
+      expect(switchValue(tester, 'Lock settings with PIN'), isFalse);
+      expect(
+        await SharedPreferencesAsync().getBool(Constants.lockSettingsKey),
+        isNot(isTrue),
+      );
+    });
+
+    testWidgets('Lock settings can be turned on once Set app PIN is on', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester);
+
+      await tester.tap(
+        find.widgetWithText(SwitchListTile, 'Lock settings with PIN'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(switchValue(tester, 'Lock settings with PIN'), isTrue);
+      expect(
+        await SharedPreferencesAsync().getBool(Constants.lockSettingsKey),
+        isTrue,
+      );
+    });
+
+    testWidgets('Set app PIN stays on while Lock settings is on', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true, lockSettings: true);
+      await showSecurity(tester, title: 'Set app PIN');
+
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Set app PIN'));
+      await tester.pump();
+
+      expect(
+        find.text('Turn off "Lock settings with PIN" first'),
+        findsOneWidget,
+      );
+      expect(switchValue(tester, 'Set app PIN'), isTrue);
+      expect(
+        await const FlutterSecureStorage().read(
+          key: Constants.appLockEnabledKey,
+        ),
+        'true',
+      );
+    });
+
+    testWidgets('Set app PIN can be turned off when Lock settings is off', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester, title: 'Set app PIN');
+
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Set app PIN'));
+      await tester.pumpAndSettle();
+
+      expect(switchValue(tester, 'Set app PIN'), isFalse);
+      expect(
+        await const FlutterSecureStorage().read(
+          key: Constants.appLockEnabledKey,
+        ),
+        'false',
+      );
     });
 
     testWidgets(
@@ -231,7 +322,8 @@ void main() {
         expect(
           find.text(
             'This will remove all items from blocked websites, keywords, '
-            'whitelist and unselect all blocked apps. Do you want to proceed?',
+            'whitelist and unselect all blocked apps.'
+            '\n\nDo you want to proceed?',
           ),
           findsOneWidget,
         );
@@ -291,7 +383,8 @@ void main() {
         expect(
           find.text(
             'This will reset blocked sites, keywords and whitelist to '
-            'default data. Do you want to proceed?',
+            'default data.'
+            '\n\nDo you want to proceed?',
           ),
           findsOneWidget,
         );

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 pluginManagement {
     val flutterSdkPath = run {
         val properties = java.util.Properties()

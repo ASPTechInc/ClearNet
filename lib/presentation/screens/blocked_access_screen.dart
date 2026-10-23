@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,7 +79,10 @@ class BlockedAccessScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    platform.invokeMethod('goHome');
+                    // Close this page first, so reopening ClearNet shows the
+                    // main screen instead of the blocked page again
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    await platform.invokeMethod('goHome');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,

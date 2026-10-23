@@ -1,11 +1,16 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 
 // Flutter imports:
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Project imports:
+import 'package:clearnet/data/controllers/uninstall_protection_controller.dart';
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
@@ -13,14 +18,23 @@ import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/navigation/bottom_nav_bar.dart';
+import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/theme/app_theme.dart';
 import 'package:clearnet/presentation/widgets/permission_requirement_dialogue.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // List ClearNet's own licence alongside the packages in showLicensePage()
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks([
+      Constants.appName,
+    ], await rootBundle.loadString('LICENSE'));
+  });
   await ThemeService().init();
   await BlocklistManager.init();
+  // Keep the Android side's uninstall protection in step with the saved PIN
+  await UninstallProtectionController.sync();
   runApp(const ClearNetApp());
 }
 
@@ -69,6 +83,8 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     platform.setMethodCallHandler((call) async {
       if (call.method == 'showBlockedPage') {
         _navigateToBlocked();
+      } else if (call.method == 'showUninstallPin') {
+        _navigateToUninstallPin();
       }
     });
   }
@@ -76,10 +92,12 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
   Future<void> _checkInitialAction() async {
     try {
       final String? action = await platform.invokeMethod('checkInitialAction');
-      if (action == 'showBlocked') {
+      if (action == 'showBlocked' || action == 'verifyUninstallPin') {
         // Delay slightly to ensure navigator is ready
         Future.delayed(const Duration(milliseconds: 500), () {
-          _navigateToBlocked();
+          action == 'showBlocked'
+              ? _navigateToBlocked()
+              : _navigateToUninstallPin();
         });
       }
     } catch (e) {
@@ -87,10 +105,19 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
     }
   }
 
+  void _navigateToUninstallPin() {
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      AppRoutes.verifyUninstallPin,
+      (route) => route.isFirst,
+    );
+  }
+
   void _navigateToBlocked() {
+    // Keep the main screen underneath, so leaving the blocked page returns to
+    // the app. Earlier blocked pages are removed so they don't stack up.
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       AppRoutes.blocked,
-      (route) => false,
+      (route) => route.isFirst,
     );
   }
 
@@ -201,8 +228,9 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: mode,
-          home: BottomNavBar(controller: AppNavigationService.controller),
-          // initialRoute: AppRoutes.root,
+          home: AppLockScreen(
+            child: BottomNavBar(controller: AppNavigationService.controller),
+          ),
           onGenerateRoute: AppRoutes.generateRoute,
         );
       },

@@ -3,7 +3,7 @@
 A selection of other free open-source software (FOSS) projects created by the developer that may be
 of interest.
 
-- [ClearNet ](https://github.com/ASPTechInc/ClearNet) - A Dart-based parental control application
+- [ClearNet ](https://github.com/ASPTechInc/ClearNet) - A Dart-based content control application
   that blocks harmful website content, restricts applications and prevents unauthorised application
   removal. It uses the Flutter framework.
 

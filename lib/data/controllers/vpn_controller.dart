@@ -1,14 +1,19 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/services.dart';
 
 // Project imports:
+import 'package:clearnet/data/services/app_lock_service.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 class VpnController {
   static const platform = MethodChannel(Constants.methodChannelName);
 
-  /// Start VPN
+  /// Start VPN. The first time, Android shows its VPN permission screen.
   static Future<void> startVpn() async {
+    AppLockService.expectExternalActivity();
     await platform.invokeMethod('startVpn');
   }
 
@@ -55,6 +60,7 @@ class VpnController {
 
   /// Open Accessibility Settings
   static Future<void> openAccessibilitySettings() async {
+    AppLockService.expectExternalActivity();
     await platform.invokeMethod('openAccessibilitySettings');
   }
 
@@ -66,12 +72,8 @@ class VpnController {
 
   /// Request Ignore Battery Optimisations
   static Future<void> requestIgnoreBatteryOptimisations() async {
+    AppLockService.expectExternalActivity();
     await platform.invokeMethod('requestIgnoreBatteryOptimizations');
-  }
-
-  /// Show the native confirmation dialogue to disable blocking
-  static Future<bool> showDisableConfirmation() async {
-    return await platform.invokeMethod('showDisableConfirmation') ?? false;
   }
 
   /// Get Battery Stats

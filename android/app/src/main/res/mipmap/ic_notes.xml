@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notes disguise icon for Android 7, which has no adaptive icons:
+     the same drawing on a round background. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/disguise_notes_background" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_notes_foreground" />
+</layer-list>

@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
+// Dart imports:
+import 'dart:async';
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -65,6 +71,32 @@ void main() {
       await tester.tap(okayButton);
       await tester.pumpAndSettle();
 
+      expect(methodLog.any((call) => call.method == 'goHome'), isTrue);
+    });
+
+    testWidgets('tapping Okay closes the page and returns to the main screen', (
+      WidgetTester tester,
+    ) async {
+      final navigatorKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          home: const Scaffold(body: Text('Main screen')),
+        ),
+      );
+      unawaited(
+        navigatorKey.currentState!.push(
+          MaterialPageRoute<void>(builder: (_) => const BlockedAccessScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Sorry, this website is blocked.'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Okay'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sorry, this website is blocked.'), findsNothing);
+      expect(find.text('Main screen'), findsOneWidget);
       expect(methodLog.any((call) => call.method == 'goHome'), isTrue);
     });
   });

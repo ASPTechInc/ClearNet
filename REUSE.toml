@@ -1,0 +1,10 @@
+# REUSE licensing metadata: https://reuse.software/spec-3.3/
+# Source files carry their own SPDX headers. This covers everything that
+# cannot hold a comment header (images, JSON, Markdown, generated platform code).
+version = 1
+
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 ASPTechnologies Incorporation"
+SPDX-License-Identifier = "MIT"

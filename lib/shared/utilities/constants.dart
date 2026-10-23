@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Project imports:
 import 'package:clearnet/data/models/dns_preset.dart';
 
@@ -5,6 +8,8 @@ class Constants {
   static const String appName = 'ClearNet';
   static const String appCalculatorDisguiseName = 'Calculator';
   static const String appNotesDisguiseName = 'Notes';
+  // The Android side reads the next three keys and blockedAppsKey by name
+  // (DataStoreReader.kt), so renaming them breaks the VPN and app blocking
   static const String blocklistKey = 'blocked_sites';
   static const String keywordsKey = 'blocked_keywords';
   static const String whitelistKey = 'whitelisted_sites';
@@ -28,6 +33,7 @@ class Constants {
   static const String lockSettingsKey = 'lock_settings';
   static const String appLockEnabledKey = 'app_lock_enabled';
   static const String appPinKey = 'app_pin';
+  static const String appLockTimeoutKey = 'app_lock_timeout_seconds';
   static const String uninstallPinKey = 'uninstall_pin';
   static const String appDisguiseKey = 'app_disguise';
 
@@ -43,14 +49,17 @@ class Constants {
 
   static const String buyMeACoffeeUrl = 'https://buymeacoffee.com/asptechinc';
 
+  /// Set with `--dart-define=FDROID_BUILD=true`. F-Droid delivers updates
+  /// itself, so the in-app GitHub update checker is hidden in those builds.
+  static const bool isFdroidBuild = bool.fromEnvironment('FDROID_BUILD');
+
   static const List<DnsPreset> dnsPresets = [
-    DnsPreset(id: 'default', label: 'Default (FOSS Cluster)', ip: ''),
-    DnsPreset(id: '9.9.9.9', label: 'Quad9 (9.9.9.9)', ip: '9.9.9.9'),
     DnsPreset(
-      id: '194.242.2.14',
-      label: 'Mullvad DNS (194.242.2.14)',
-      ip: '194.242.2.14',
+      id: 'default',
+      label: 'Default (UncensoredDNS, AdGuard, Quad9)',
+      ip: '',
     ),
+    DnsPreset(id: '9.9.9.9', label: 'Quad9 (9.9.9.9)', ip: '9.9.9.9'),
     DnsPreset(
       id: '94.140.14.14',
       label: 'AdGuard DNS (94.140.14.14)',

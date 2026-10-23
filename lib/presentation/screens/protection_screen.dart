@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 
@@ -12,6 +15,7 @@ import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/stats_manager.dart';
+import 'package:clearnet/presentation/widgets/disable_confirmation_dialogue.dart';
 import 'package:clearnet/presentation/widgets/permission_requirement_dialogue.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
@@ -102,6 +106,8 @@ class _ProtectionScreenState extends State<ProtectionScreen>
     final monthlyApp = await StatsManager.getMonthlyAppsCount();
 
     final isEnabled = await _prefs.getBool('is_blocking_enabled') ?? false;
+    // The VPN doesn't survive a reboot or app update, so restart it if needed
+    if (isEnabled) unawaited(VpnController.startVpn());
 
     if (!mounted) return;
     setState(() {
@@ -133,8 +139,15 @@ class _ProtectionScreenState extends State<ProtectionScreen>
         if (!granted) return;
       }
     } else {
-      // User is trying to disable blocking, show the complex confirmation task
-      final confirmed = await VpnController.showDisableConfirmation();
+      // Turning blocking off needs the typing challenge first
+      final confirmed =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const DisableConfirmationDialogue(),
+          ) ??
+          false;
+      if (!mounted) return;
       if (!confirmed) {
         // User failed or cancelled the task, do not toggle the switch
         setState(() {
@@ -144,6 +157,8 @@ class _ProtectionScreenState extends State<ProtectionScreen>
       }
     }
 
+    // Save this before starting the VPN: the service reads it on start and
+    // stops itself if blocking is off. The Android side reads it by this name.
     await _prefs.setBool('is_blocking_enabled', value);
 
     if (value) {

@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 // Project imports:
+import 'package:clearnet/data/services/app_nav_service.dart';
+import 'package:clearnet/presentation/navigation/bottom_nav_bar.dart';
 import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_content.dart';
@@ -10,6 +14,7 @@ import 'package:clearnet/presentation/screens/guide_screen.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/presentation/screens/protection_screen.dart';
 import 'package:clearnet/presentation/screens/settings_screen.dart';
+import 'package:clearnet/presentation/screens/uninstall_pin_screen.dart';
 
 class AppRoutes {
   static const String root = '/';
@@ -26,7 +31,9 @@ class AppRoutes {
   static Widget getScreen(String route) {
     switch (route) {
       case root:
-        return const AppLockScreen();
+        return AppLockScreen(
+          child: BottomNavBar(controller: AppNavigationService.controller),
+        );
 
       case home:
         return const ProtectionScreen();
@@ -44,11 +51,7 @@ class AppRoutes {
         return const GuideScreen();
 
       case verifyUninstallPin:
-        return PinLockScreen(
-          onSuccess: () async {
-            SystemNavigator.pop();
-          },
-        );
+        return const UninstallPinScreen();
 
       case setupPin:
         return const PinLockScreen(confirmMode: true);
@@ -59,9 +62,6 @@ class AppRoutes {
         );
     }
   }
-
-  /// Alias for [getScreen] for explicit clarity if needed.
-  static Widget getScreenForRoute(String route) => getScreen(route);
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     final routeName = settings.name ?? root;

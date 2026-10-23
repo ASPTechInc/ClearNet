@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:async';
 import 'dart:convert';
@@ -15,12 +18,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
+import 'package:clearnet/data/controllers/uninstall_protection_controller.dart';
+import 'package:clearnet/data/controllers/vpn_controller.dart';
+import 'package:clearnet/data/services/app_lock_service.dart';
 import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
 import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/widgets/markdown_text.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -37,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   final storage = const FlutterSecureStorage();
   final _prefs = SharedPreferencesAsync();
   final ScrollController _scrollController = ScrollController();
+  final ExpansibleController _aboutSecController = ExpansibleController();
 
   final GlobalKey _appLockKey = GlobalKey();
   final GlobalKey _disguiseKey = GlobalKey();
@@ -46,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Timer? _tourTimer;
 
   bool _appLockEnabled = false;
+  int _appLockTimeoutSeconds = AppLockService.defaultTimeoutSeconds;
   bool _lockSettingsEnabled = false;
   bool _isAppPinSet = false;
   bool _isUninstallPinSet = false;
@@ -80,6 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     WidgetsBinding.instance.removeObserver(this);
     _dnsController.dispose();
     _scrollController.dispose();
+    _aboutSecController.dispose();
     super.dispose();
   }
 
@@ -102,8 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         context: context,
         keys: [
           _appLockKey,
-          _disguiseKey,
+
           _uninstallPinKey,
+          _disguiseKey,
           _dnsKey,
           _replayTourKey,
         ],
@@ -133,6 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final lockSettings =
         await _prefs.getBool(Constants.lockSettingsKey) ?? false;
     final disguise = await _prefs.getString(Constants.appDisguiseKey) ?? 'none';
+    final lockTimeout = await AppLockService.getTimeoutSeconds();
     _dnsController.text = customDns;
     _updateSelectedDnsPresetId(customDns);
     if (!mounted) return;
@@ -142,7 +154,15 @@ class _SettingsScreenState extends State<SettingsScreen>
       _isUninstallPinSet = uninstallPin != null && uninstallPin.isNotEmpty;
       _lockSettingsEnabled = lockSettings;
       _currentDisguise = disguise;
+      _appLockTimeoutSeconds = lockTimeout;
     });
+  }
+
+  Future<void> _changeAppLockTimeout(int? seconds) async {
+    if (seconds == null) return;
+    await AppLockService.setTimeoutSeconds(seconds);
+    if (!mounted) return;
+    setState(() => _appLockTimeoutSeconds = seconds);
   }
 
   Future<void> _changeDisguise(String disguise) async {
@@ -185,6 +205,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       await _prefs.remove('custom_dns');
     } else if (_isValidIpOrEmpty(trimmed)) {
       await _prefs.setString('custom_dns', trimmed);
+    } else {
+      return;
+    }
+    // A running VPN reloads its DNS server when started again
+    if (await _prefs.getBool('is_blocking_enabled') ?? false) {
+      await VpnController.startVpn();
     }
   }
 
@@ -238,12 +264,17 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (mounted) setState(() {});
   }
 
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _toggleLockSettings(bool value) async {
-    if (value && !_isAppPinSet) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please set an App PIN first')),
-      );
+    // Settings are unlocked with the app PIN, so app lock has to be on first
+    if (value && !_appLockEnabled) {
+      _showSnackBar('Turn on "Set app PIN" first');
       return;
     }
 
@@ -254,6 +285,12 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _toggleAppLock(bool value) async {
+    // The Settings lock relies on the app PIN, so it has to be turned off first
+    if (!value && _lockSettingsEnabled) {
+      _showSnackBar('Turn off "Lock settings with PIN" first');
+      return;
+    }
+
     if (value) {
       if (!_isAppPinSet) {
         if (!mounted) return;
@@ -337,8 +374,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: const Text('Set permanent PIN'),
         content: const Text(
           'This Uninstall PIN will be used for uninstallation protection. '
-          'Once set, it CANNOT be changed or reset for security reasons. '
-          'Do you want to proceed?',
+          'Once set, it CANNOT be changed or reset for security reasons.'
+          '\n\nDo you want to proceed?',
         ),
         actions: [
           TextButton(
@@ -364,6 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           pinKey: Constants.uninstallPinKey,
           title: 'Set Uninstall PIN',
           onSuccess: () {
+            unawaited(UninstallProtectionController.sync());
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Uninstall PIN set successfully')),
@@ -398,14 +436,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _showClearContentDialog() async {
+  Future<void> _showClearContentDialogue() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear content'),
         content: const Text(
           'This will remove all items from blocked websites, keywords, '
-          'whitelist and unselect all blocked apps. Do you want to proceed?',
+          'whitelist and unselect all blocked apps.'
+          '\n\nDo you want to proceed?',
         ),
         actions: [
           TextButton(
@@ -430,14 +469,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _showResetContentDialog() async {
+  Future<void> _showResetContentDialogue() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset content'),
         content: const Text(
           'This will reset blocked sites, keywords and whitelist to '
-          'default data. Do you want to proceed?',
+          'default data.'
+          '\n\nDo you want to proceed?',
         ),
         actions: [
           TextButton(
@@ -461,7 +501,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _showThemeDialog() async {
+  Future<void> _showThemeDialogue() async {
     await showDialog(
       context: context,
       builder: (context) {
@@ -501,7 +541,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Future<void> _showDisguiseDialog() async {
+  Future<void> _showDisguiseDialogue() async {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -536,15 +576,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Future<void> _showReliabilityDialog() async {
+  Future<void> _showReliabilityDialogue() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reliability note'),
         content: const Text(
-          'For the VPN, website and app blocking to work reliably, '
-          'battery optimisation has to be disabled and the Safe '
-          'browsing service has to be enabled while '
+          'Battery optimisation has to be disabled and the Safe '
+          'browsing service has to be enabled in order for the '
+          'blocking of websites and apps too work reliably while '
           'using ${Constants.appName}.',
         ),
         actions: [
@@ -570,12 +610,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               width: double.maxFinite,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(8.0),
-                child: SelectableText(
-                  privacyPolicy,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(height: 1.4),
-                ),
+                // The dialogue already shows the title, so skip the file's own
+                child: MarkdownText(privacyPolicy, skipTitle: true),
               ),
             ),
             actions: [
@@ -785,7 +821,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
       // Extract version: e.g., [v1.0.0]
       final versionMatch = RegExp(r'\[(v.*?)\]').firstMatch(trimmedBlock);
-      // Extract date: e.g., (2026-09-18)
+      // Extract date: e.g., (2026-10-13)
       final dateMatch = RegExp(
         r'\((\d{4}-\d{2}-\d{2})\)',
       ).firstMatch(trimmedBlock);
@@ -801,6 +837,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         final trimmedLine = line.trim();
         if (trimmedLine.startsWith('-')) {
           features.add(trimmedLine.substring(1).trim());
+        } else if (line.startsWith(' ') &&
+            trimmedLine.isNotEmpty &&
+            features.isNotEmpty) {
+          // An indented line continues the bullet above it
+          features.last = '${features.last} $trimmedLine';
         }
       }
 
@@ -844,37 +885,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                 const SizedBox(height: 16),
                 ...features.map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0, right: 12.0),
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
+                  (feature) => MarkdownBullet(
+                    child: Text.rich(
+                      TextSpan(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          height: 1.4,
                         ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    height: 1.4,
-                                  ),
-                              children: _parseBoldText(feature),
-                            ),
-                          ),
-                        ),
-                      ],
+                        children: MarkdownText.inlineSpans(feature),
+                      ),
                     ),
                   ),
                 ),
@@ -892,26 +911,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     return widgets;
   }
 
-  List<InlineSpan> _parseBoldText(String text) {
-    final List<InlineSpan> spans = [];
-    final parts = text.split('**');
-    for (int i = 0; i < parts.length; i++) {
-      if (i % 2 == 1) {
-        spans.add(
-          TextSpan(
-            text: parts[i],
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      } else {
-        spans.add(TextSpan(text: parts[i]));
-      }
-    }
-    return spans;
-  }
-
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
+    AppLockService.expectExternalActivity();
     if (!await launchUrl(uri, mode: LaunchMode.inAppWebView)) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -933,11 +935,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         // Cast the decoded JSON to Map<String, dynamic>
         final data = json.decode(response.body) as Map<String, dynamic>;
         final latestTag = data['tag_name'] as String;
-        // Simple version comparison (e.g. v1.1.0 vs 1.0.0)
-        final currentVersion = _appVersion.split('+')[0];
-        final cleanLatest = latestTag.replaceAll('v', '');
 
-        if (cleanLatest != currentVersion) {
+        if (isNewerVersion(latestTag, _appVersion)) {
           setState(() {
             _isUpdateAvailable = true;
             _latestVersion = latestTag;
@@ -961,7 +960,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -969,13 +967,15 @@ class _SettingsScreenState extends State<SettingsScreen>
       body: ListView(
         controller: _scrollController,
         children: [
+          // Section: General
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Appearance',
+              'General',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+          // Theme
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
@@ -983,34 +983,27 @@ class _SettingsScreenState extends State<SettingsScreen>
               ThemeService.themeModeNotifier.value.name[0].toUpperCase() +
                   ThemeService.themeModeNotifier.value.name.substring(1),
             ),
-            onTap: _showThemeDialog,
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Reliability',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            onTap: _showThemeDialogue,
           ),
           ListTile(
-            leading: const Icon(
-              Icons.verified_user_outlined,
-              color: Colors.blue,
-            ),
+            leading: const Icon(Icons.verified_user_outlined),
             title: const Text('Reliability & performance note'),
-            subtitle: const Text('Important information for the stability '
-            'of the application'),
-            onTap: _showReliabilityDialog,
+            subtitle: const Text(
+              'Important information about the stability '
+              'of the application',
+            ),
+            onTap: _showReliabilityDialogue,
           ),
           const Divider(),
+          // Section: Privacy & Security
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Security',
+              'Privacy & Security',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+          // App lock
           AppTourManager.appTourItem(
             key: _appLockKey,
             enableAutoScroll: true,
@@ -1024,12 +1017,33 @@ class _SettingsScreenState extends State<SettingsScreen>
               onChanged: _toggleAppLock,
             ),
           ),
+          if (_appLockEnabled)
+            ListTile(
+              leading: const Icon(Icons.timer_outlined),
+              title: const Text('Lock after leaving'),
+              subtitle: const Text(
+                'Closes ${Constants.appName} after you leave it, so the app '
+                'PIN is needed again',
+              ),
+              trailing: DropdownButton<int>(
+                value: _appLockTimeoutSeconds,
+                onChanged: _changeAppLockTimeout,
+                items: [
+                  for (final option in AppLockService.timeoutOptions.entries)
+                    DropdownMenuItem(
+                      value: option.key,
+                      child: Text(option.value),
+                    ),
+                ],
+              ),
+            ),
           if (_isAppPinSet)
             ListTile(
               title: const Text('Change app PIN'),
               leading: const Icon(Icons.password),
               onTap: _changeAppPin,
             ),
+          // Lock settings with PIN
           SwitchListTile(
             title: const Text('Lock settings with PIN'),
             subtitle: const Text(
@@ -1038,28 +1052,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             value: _lockSettingsEnabled,
             onChanged: _toggleLockSettings,
           ),
-          AppTourManager.appTourItem(
-            key: _disguiseKey,
-            enableAutoScroll: true,
-            title: 'Disguise mode',
-            description:
-                'Disguise ${Constants.appName} on your home screen as an '
-                'innocuous application like a calculator or calendar.',
-            child: ListTile(
-              title: const Text('Disguise mode'),
-              subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
-              leading: const Icon(Icons.theater_comedy_outlined),
-              onTap: _showDisguiseDialog,
-            ),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Uninstall protection',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
+          // Uninstall protection
           AppTourManager.appTourItem(
             key: _uninstallPinKey,
             enableAutoScroll: true,
@@ -1085,12 +1078,27 @@ class _SettingsScreenState extends State<SettingsScreen>
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'Warning: Once set, the Uninstall PIN cannot be changed '
-                'or reset.',
+                'Warning: Once set, it CANNOT be changed or reset.',
                 style: TextStyle(color: Colors.orange, fontSize: 12),
               ),
             ),
+          // Disguise mode
+          AppTourManager.appTourItem(
+            key: _disguiseKey,
+            enableAutoScroll: true,
+            title: 'Disguise mode',
+            description:
+                'Disguise ${Constants.appName} on your home screen as an '
+                'innocuous application like a calculator or notes.',
+            child: ListTile(
+              title: const Text('Disguise mode'),
+              subtitle: Text('Current: ${_currentDisguise.toUpperCase()}'),
+              leading: const Icon(Icons.theater_comedy_outlined),
+              onTap: _showDisguiseDialogue,
+            ),
+          ),
           const Divider(),
+          // Section: Network & DNS
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -1118,7 +1126,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     initialValue: _getDnsDropdownSelectedId(),
                     isExpanded: true,
                     decoration: const InputDecoration(
-                      labelText: 'Curated DNS Resolver',
+                      labelText: 'DNS server',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.dns_outlined),
                     ),
@@ -1139,7 +1147,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     decoration: InputDecoration(
                       labelText: 'Enter a custom upstream DNS server',
                       hintText:
-                          'e.g. 9.9.9.9 (Leave blank for default FOSS cluster)',
+                          'e.g. 9.9.9.9 (leave blank for the default servers)',
                       errorText: _dnsErrorText,
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.edit_outlined),
@@ -1159,6 +1167,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
           const Divider(),
+          // Section: Content
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -1166,10 +1175,13 @@ class _SettingsScreenState extends State<SettingsScreen>
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+          // Guide
           ListTile(
-            title: const Text('Guide'),
+            title: const Text('Help & tips'),
+            subtitle: const Text('Learn how to use the app effectively'),
             onTap: () => _navigateToContentSection(AppRoutes.guide),
           ),
+          // Replay app tour
           AppTourManager.appTourItem(
             key: _replayTourKey,
             enableAutoScroll: true,
@@ -1192,94 +1204,115 @@ class _SettingsScreenState extends State<SettingsScreen>
               },
             ),
           ),
+          // Clear content
           ListTile(
             title: const Text('Clear content'),
-            onTap: () => _showClearContentDialog(),
+            subtitle: const Text('Remove all block list rules'),
+            onTap: () => _showClearContentDialogue(),
           ),
+          // Reset content
           ListTile(
             title: const Text('Reset content'),
-            onTap: () => _showResetContentDialog(),
+            subtitle: const Text('Revert to the default state of the app'),
+            onTap: () => _showResetContentDialogue(),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'About',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // Section: About
+          ExpansionTile(
+            title: const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'About',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Privacy policy'),
-            onTap: _showPrivacyPolicyDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.description_outlined),
-            title: const Text('Licence'),
-            onTap: _showLicenseDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App version'),
-            subtitle: Text(_appVersion),
-          ),
-          ListTile(
-            leading: const Icon(Icons.history_outlined),
-            title: const Text('Changelog'),
-            subtitle: const Text('View recent changes'),
-            onTap: _showChangelogDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.code_outlined),
-            title: const Text('Source code'),
-            subtitle: const Text('View on GitHub'),
-            onTap: _showSourceCodeDialog,
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Support',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            subtitle: ListenableBuilder(
+              listenable: _aboutSecController,
+              builder: (context, _) => _aboutSecController.isExpanded
+                  ? const SizedBox.shrink()
+                  : const Text('Tap to expand'),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.coffee_outlined, color: Colors.brown),
-            title: const Text('Donate'),
-            subtitle: const Text(
-              'Support lead app developer by buying a coffee',
-            ),
-            onTap: _showDonateDialog,
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Updates',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.system_update_outlined),
-            title: const Text('App updater'),
-            subtitle: _isUpdateAvailable
-                ? Text('New version available: $_latestVersion')
-                : const Text('Check for latest releases'),
-            trailing: _isCheckingUpdate
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : _isUpdateAvailable
-                ? ElevatedButton(
-                    onPressed: () => _launchUrl(Constants.releasesUrl),
-                    child: const Text('Update now'),
-                  )
-                : TextButton(
-                    onPressed: _checkUpdates,
-                    child: const Text('Check updates'),
-                  ),
+            controller: _aboutSecController,
+            children: [
+              // Privacy policy
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('Privacy policy'),
+                onTap: _showPrivacyPolicyDialog,
+              ),
+              // Licence information
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Licence'),
+                onTap: _showLicenseDialog,
+              ),
+              // Open-source licences
+              ListTile(
+                leading: const Icon(Icons.library_books_outlined),
+                title: const Text('Open-source licences'),
+                subtitle: const Text('Licences of third-party packages'),
+                onTap: () => showLicensePage(
+                  context: context,
+                  applicationName: Constants.appName,
+                  applicationVersion: _appVersion,
+                ),
+              ),
+              // App version information
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('App version'),
+                subtitle: Text(_appVersion),
+              ),
+              if (!Constants.isFdroidBuild) ...[
+                // App updater
+                ListTile(
+                  leading: const Icon(Icons.system_update_outlined),
+                  title: const Text('Updater'),
+                  subtitle: _isUpdateAvailable
+                      ? Text('New version available: $_latestVersion')
+                      : const Text('Check for latest releases'),
+                  trailing: _isCheckingUpdate
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : _isUpdateAvailable
+                      ? ElevatedButton(
+                          onPressed: () => _launchUrl(Constants.releasesUrl),
+                          child: const Text('Update now'),
+                        )
+                      : TextButton(
+                          onPressed: _checkUpdates,
+                          child: const Text('Check updates'),
+                        ),
+                ),
+              ],
+              // Changelog
+              ListTile(
+                leading: const Icon(Icons.history_outlined),
+                title: const Text('Changelog'),
+                subtitle: const Text('View recent changes'),
+                onTap: _showChangelogDialog,
+              ),
+              // Source code
+              ListTile(
+                leading: const Icon(Icons.code_outlined),
+                title: const Text('Source code'),
+                subtitle: const Text('View on GitHub'),
+                onTap: _showSourceCodeDialog,
+              ),
+              // Donate
+              ListTile(
+                leading: const Icon(Icons.coffee_outlined, color: Colors.brown),
+                title: const Text('Donate'),
+                subtitle: const Text(
+                  'Support lead app developer by buying a coffee',
+                ),
+                onTap: _showDonateDialog,
+              ),
+              // App updater
+            ],
           ),
           const SizedBox(height: 32),
         ],

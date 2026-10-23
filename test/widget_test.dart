@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -107,10 +110,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final prefs = SharedPreferencesAsync();
-      expect(
-        await prefs.getBool(AppTourManager.protectionTourKey),
-        isTrue,
-      );
+      expect(await prefs.getBool(AppTourManager.protectionTourKey), isTrue);
     },
   );
 
@@ -139,10 +139,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final prefs = SharedPreferencesAsync();
-      expect(
-        await prefs.getBool(AppTourManager.protectionTourKey),
-        isTrue,
-      );
+      expect(await prefs.getBool(AppTourManager.protectionTourKey), isTrue);
     },
   );
 
@@ -175,9 +172,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Blocking paused'), findsOneWidget);
-    expect(
-      await prefs.getBool(AppTourManager.protectionTourKey),
-      isTrue,
-    );
+    expect(await prefs.getBool(AppTourManager.protectionTourKey), isTrue);
   });
 }

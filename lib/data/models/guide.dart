@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 enum GuideDataType { intro, doPage, dont, tip }
 
 class GuideItem {
@@ -15,6 +18,7 @@ class GuideItem {
       case 'intro':
         type = GuideDataType.intro;
         break;
+      // guide.json uses "do"; the enum can't, as do is a Dart keyword
       case 'do':
       case 'doPage':
         type = GuideDataType.doPage;

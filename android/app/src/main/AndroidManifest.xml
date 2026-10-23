@@ -22,17 +22,29 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
         </activity>
+
+        <!-- Launcher icons. MainActivity has no icon of its own and is never
+             turned off, because ClearNet opens it directly (for example for the
+             blocked page). Disguise mode switches which one of these is on. -->
+        <activity-alias
+            android:name=".DefaultActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <activity-alias
             android:name=".CalculatorActivity"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/ic_calculator"
             android:label="@string/app_name_calculator"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -45,7 +57,7 @@
             android:name=".NotesActivity"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/ic_notes"
             android:label="@string/app_name_notes"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -56,6 +68,7 @@
 
         <receiver
             android:name=".AdminReceiver"
+            android:description="@string/device_admin_description"
             android:exported="true"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data
@@ -82,17 +95,6 @@
             android:name=".SafeVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="true"/>
-
-        <activity
-            android:name=".BlockedActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar"/>
-
-        <activity
-            android:name=".ConfirmationActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar"
-            android:windowSoftInputMode="adjustResize"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

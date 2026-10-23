@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +15,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:clearnet/data/controllers/vpn_controller.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/presentation/screens/protection_screen.dart';
+import 'package:clearnet/presentation/widgets/disable_confirmation_dialogue.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 void main() {
@@ -38,7 +42,6 @@ void main() {
             if (methodCall.method == 'isIgnoringBatteryOptimizations') {
               return true;
             }
-            if (methodCall.method == 'showDisableConfirmation') return true;
             if (methodCall.method == 'getStats') return mockStats;
             return null;
           });
@@ -98,11 +101,34 @@ void main() {
       expect(methodLog.any((c) => c.method == 'startVpn'), true);
       expect(find.text('Blocking active'), findsOneWidget);
 
-      // Toggle back
+      // Turning it off asks for the typing challenge; giving up keeps it on
       await tester.tap(switchFinder);
-      await tester.pump();
       await tester.pumpAndSettle();
+      expect(find.byType(DisableConfirmationDialogue), findsOneWidget);
+      await tester.tap(find.text('I give up'));
+      await tester.pumpAndSettle();
+      expect(find.text('Blocking active'), findsOneWidget);
+      expect(methodLog.any((c) => c.method == 'stopVpn'), false);
+
+      // Passing the challenge turns it off
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+      for (var step = 0; step < 3; step++) {
+        final sentence = tester
+            .widgetList<Text>(
+              find.descendant(
+                of: find.byType(DisableConfirmationDialogue),
+                matching: find.byType(Text),
+              ),
+            )
+            .map((text) => text.data ?? '')
+            .firstWhere((text) => text.split(' ').length >= 12);
+        await tester.enterText(find.byType(TextField), sentence);
+        await tester.tap(find.byType(FilledButton));
+        await tester.pumpAndSettle();
+      }
       expect(methodLog.any((c) => c.method == 'stopVpn'), true);
+      expect(find.text('Blocking paused'), findsOneWidget);
     });
 
     testWidgets('displays stats correctly', (WidgetTester tester) async {

@@ -1,8 +1,22 @@
-ClearNet is a free and open-source (FOSS) parental control application built with Flutter and native Android security systems. It is designed to safeguard children and devices by enforcing granular app restrictions and blocking harmful content fully offline.
+ClearNet is a free and open-source (FOSS) content-control app built with Flutter and native Android system services. It helps parents, carers and individuals block harmful websites, restrict chosen apps and prevent the protection from being removed without a PIN.
 
-Key Features:
-- Uninstall Safeguard: Integrates tightly as an Android Device Administrator to prevent unauthorised removal without a parental PIN.
-- App Filtering: Blocks chosen restricted applications from executing or launching.
-- Offline Content Filter: Preloaded local JSON domain blocklists intercept queries without relying on remote servers.
-- High-Performance Local VPN: Routes network lookups completely locally inside an on-device VPNService loop.
-- Absolute Privacy: Zero analytics trackers, zero advertisement injection and absolutely no personal metrics collected.
+<b>Features</b>
+<ul>
+<li><b>Website filtering:</b> blocks domains and keywords from an editable local blocklist, with a whitelist for exceptions.</li>
+<li><b>App blocking:</b> stops chosen apps from opening.</li>
+<li><b>Uninstall protection:</b> a PIN is required before ClearNet can be removed or switched off.</li>
+<li><b>App lock and disguise:</b> optional PIN lock and an alternative launcher icon.</li>
+<li><b>No tracking:</b> no analytics, no adverts and no account. Your lists and settings stay on your device.</li>
+</ul>
+
+<b>Why ClearNet needs sensitive permissions</b>
+
+ClearNet asks for several powerful Android permissions. Each one is optional, is only turned on when you grant it, and is used solely for the purpose below.
+
+<b>VPN service:</b> ClearNet creates a local VPN on your device so that it can see DNS lookups (the step where an app turns a website name into an address). Lookups for blocked domains are answered on the device and never leave it. Other lookups are forwarded to your chosen DNS server, or by default to UncensoredDNS, AdGuard DNS or Quad9. ClearNet does not route your general traffic through any remote VPN server. Android allows only one VPN at a time, so ClearNet cannot run alongside another VPN app.
+
+<b>Accessibility service:</b> this lets ClearNet notice which app is in the foreground so it can block restricted apps. In supported web browsers it also reads the text on screen, such as the address bar and page content, and checks it against your blocked keywords and domains. If you set an uninstall PIN, it also watches for the Settings screens that could turn ClearNet off or remove it, and asks for the uninstall PIN first. These checks happen entirely on the device. Screen content is never stored or sent anywhere.
+
+<b>Device administrator:</b> this stops ClearNet from being uninstalled or switched off without your PIN. ClearNet does not use device-admin rights to wipe, lock or reset your device.
+
+<b>Disguised launcher icons:</b> you can optionally replace the ClearNet icon with a "Calculator" or "Notes" icon. This makes the protection less obvious, and less likely to be tampered with, on a shared or child's device. The disguised icon opens ClearNet as normal, and you can switch back to the original icon at any time in Settings.

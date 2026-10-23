@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 // Dart imports:
 import 'dart:convert';
 
@@ -60,6 +63,45 @@ void main() {
           .setMockMessageHandler('flutter/assets', null);
     });
 
+    test(
+      'importing a file with no whitelist leaves the whitelist empty',
+      () async {
+        await BlocklistManager.importFromJson(
+          json.encode({
+            'domains': ['Imported.com'],
+            'keywords': ['poker'],
+          }),
+          syncToFile: false,
+        );
+
+        expect(await BlocklistManager.loadUserDomains(), ['imported.com']);
+        expect(await BlocklistManager.loadUserKeywords(), ['poker']);
+        expect(await BlocklistManager.loadUserWhitelist(), isEmpty);
+      },
+    );
+
+    test('importing replaces the existing lists', () async {
+      await BlocklistManager.importFromJson(
+        json.encode({
+          'domains': ['first.com'],
+          'keywords': [],
+          'whitelist': ['ok.com'],
+        }),
+        syncToFile: false,
+      );
+      await BlocklistManager.importFromJson(
+        json.encode({
+          'domains': ['second.com'],
+          'keywords': [],
+          'whitelist': [],
+        }),
+        syncToFile: false,
+      );
+
+      expect(await BlocklistManager.loadUserDomains(), ['second.com']);
+      expect(await BlocklistManager.loadUserWhitelist(), isEmpty);
+    });
+
     test('loadUserDomains returns an empty list initially', () async {
       final userSites = await BlocklistManager.loadUserDomains();
       expect(userSites, isEmpty);
@@ -92,38 +134,35 @@ void main() {
       expect(userWhitelist.first, 'myallowedsite.com');
     });
 
-    test(
-      'buildFinalBlocklist correctly merges baseline assets and '
-      'user-configured sites',
-      () async {
-        await BlocklistManager.addUserDomain('customblocked.org');
-        await BlocklistManager.addUserWhitelist('myallowedsite.com');
-        await BlocklistManager.buildFinalBlocklist();
+    test('buildFinalBlocklist correctly merges baseline assets and '
+        'user-configured sites', () async {
+      await BlocklistManager.addUserDomain('customblocked.org');
+      await BlocklistManager.addUserWhitelist('myallowedsite.com');
+      await BlocklistManager.buildFinalBlocklist();
 
-        final prefs = SharedPreferencesAsync();
-        final syncedDomains =
-            await prefs.getStringList(Constants.blocklistKey) ?? [];
-        final syncedKeywords =
-            await prefs.getStringList(Constants.keywordsKey) ?? [];
-        final syncedWhitelist =
-            await prefs.getStringList(Constants.whitelistKey) ?? [];
+      final prefs = SharedPreferencesAsync();
+      final syncedDomains =
+          await prefs.getStringList(Constants.blocklistKey) ?? [];
+      final syncedKeywords =
+          await prefs.getStringList(Constants.keywordsKey) ?? [];
+      final syncedWhitelist =
+          await prefs.getStringList(Constants.whitelistKey) ?? [];
 
-        expect(syncedDomains, hasLength(3));
-        expect(
-          syncedDomains,
-          containsAll([
-            'adultcontent.com',
-            'gamblingsite.net',
-            'customblocked.org',
-          ]),
-        );
-        expect(syncedKeywords, containsAll(['casino', 'betting', 'xxx']));
-        expect(
-          syncedWhitelist,
-          containsAll(['safe-casino.com', 'myallowedsite.com']),
-        );
-      },
-    );
+      expect(syncedDomains, hasLength(3));
+      expect(
+        syncedDomains,
+        containsAll([
+          'adultcontent.com',
+          'gamblingsite.net',
+          'customblocked.org',
+        ]),
+      );
+      expect(syncedKeywords, containsAll(['casino', 'betting', 'xxx']));
+      expect(
+        syncedWhitelist,
+        containsAll(['safe-casino.com', 'myallowedsite.com']),
+      );
+    });
 
     test(
       'shouldBlock flags domains matching the blocklist exactly or partially',
@@ -156,21 +195,46 @@ void main() {
       );
     });
 
-    test(
-      'shouldBlock respects whitelist override over blocked keywords '
-      'and domains',
-      () async {
-        await BlocklistManager.addUserWhitelist('custom-casino-news.com');
-        await BlocklistManager.buildFinalBlocklist();
+    test('a blocked site does not block lookalike domains', () async {
+      await BlocklistManager.addUserDomain('x.com');
+      await BlocklistManager.buildFinalBlocklist();
 
-        // "casino" is a blocked keyword, but "safe-casino.com" (from asset) 
-        //& "custom-casino-news.com" are whitelisted
-        expect(await BlocklistManager.shouldBlock('safe-casino.com'), isFalse);
-        expect(
-          await BlocklistManager.shouldBlock('custom-casino-news.com'),
-          isFalse,
-        );
-      },
-    );
+      expect(await BlocklistManager.shouldBlock('x.com'), isTrue);
+      expect(await BlocklistManager.shouldBlock('www.x.com'), isTrue);
+      expect(await BlocklistManager.shouldBlock('box.com'), isFalse);
+      expect(await BlocklistManager.shouldBlock('x.com.au'), isFalse);
+    });
+
+    test('a whitelisted site does not allow lookalike domains', () async {
+      await BlocklistManager.addUserWhitelist('google.com');
+      await BlocklistManager.addUserDomain('notgoogle.com');
+      await BlocklistManager.buildFinalBlocklist();
+
+      expect(await BlocklistManager.shouldBlock('notgoogle.com'), isTrue);
+      expect(await BlocklistManager.shouldBlock('google.com.evil'), isFalse);
+      expect(await BlocklistManager.shouldBlock('www.google.com'), isFalse);
+    });
+
+    test('matchesDomain covers the domain and its subdomains only', () {
+      expect(BlocklistManager.matchesDomain('x.com', 'x.com'), isTrue);
+      expect(BlocklistManager.matchesDomain('a.b.x.com', 'x.com'), isTrue);
+      expect(BlocklistManager.matchesDomain('X.COM', 'x.com'), isTrue);
+      expect(BlocklistManager.matchesDomain('box.com', 'x.com'), isFalse);
+      expect(BlocklistManager.matchesDomain('x.com', ''), isFalse);
+    });
+
+    test('shouldBlock respects whitelist override over blocked keywords '
+        'and domains', () async {
+      await BlocklistManager.addUserWhitelist('custom-casino-news.com');
+      await BlocklistManager.buildFinalBlocklist();
+
+      // "casino" is a blocked keyword, but "safe-casino.com" (from asset)
+      //& "custom-casino-news.com" are whitelisted
+      expect(await BlocklistManager.shouldBlock('safe-casino.com'), isFalse);
+      expect(
+        await BlocklistManager.shouldBlock('custom-casino-news.com'),
+        isFalse,
+      );
+    });
   });
 }

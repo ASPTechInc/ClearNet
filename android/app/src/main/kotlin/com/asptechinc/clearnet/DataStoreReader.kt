@@ -1,12 +1,25 @@
+// SPDX-FileCopyrightText: 2026 ASPTechnologies Incorporation
+// SPDX-License-Identifier: MIT
+
 package com.asptechinc.clearnet
 
 import android.content.Context
 import android.util.Log
 import java.io.File
-import java.io.FileInputStream
+import org.json.JSONArray
 
+/**
+ * Reads the settings the Flutter app saves with SharedPreferencesAsync, so the
+ * VPN and accessibility service can use them. Native code can't call the Flutter
+ * plugin, so this reads the DataStore file directly. Values are looked up by
+ * their exact Dart key names (such as 'blocked_sites' and 'is_blocking_enabled'),
+ * so those names are shared with this file.
+ */
 object DataStoreReader {
     private const val TAG = "DataStoreReader"
+
+    // The shared_preferences plugin saves a list as text: this prefix, then JSON
+    private const val LIST_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIGxpc3Qu!"
 
     class DataStoreData(
         val isBlockingEnabled: Boolean = false,
@@ -24,87 +37,148 @@ object DataStoreReader {
             return DataStoreData()
         }
 
-        try {
-            val bytes = FileInputStream(dataStoreFile).use { it.readBytes() }
-            val content = String(bytes, Charsets.ISO_8859_1)
-
-            // Extract is_blocking_enabled
-            // Proto layout: key string 'is_blocking_enabled', followed by type/value info.
-            // SharedPreferencesAsync places \u0012\u0002\u0008\u0001 for true, \u0012\u0002\u0008\u0000 for false.
-            val isBlockingEnabledIdx = content.indexOf("is_blocking_enabled")
-            var isBlockingEnabled = false
-            if (isBlockingEnabledIdx != -1) {
-                val sub = content.substring(isBlockingEnabledIdx)
-                // Search for the boolean value flag or text check
-                if (sub.contains("\u0008\u0001") || sub.contains("\u0012\u0002\u0008\u0001") || sub.contains("\u0012\u0001\u0001")) {
-                    isBlockingEnabled = true
-                } else {
-                    // Fail-safe substring scan in the trailing 40 chars
-                    val endBound = minOf(sub.length, 40)
-                    val searchSegment = sub.substring(0, endBound)
-                    if (searchSegment.contains("\u0001")) {
-                        isBlockingEnabled = true
-                    }
-                }
-            }
-
-            // Extract Lists using the JSON array literal fallback string layout
-            val blockedSites = extractList(content, "blocked_sites")
-            val blockedKeywords = extractList(content, "blocked_keywords")
-            val whitelistedSites = extractList(content, "whitelisted_sites")
-            val blockedApps = extractList(content, "blocked_apps")
-            val customDns = extractString(content, "custom_dns")
-
-            Log.d(TAG, "Successfully parsed Jetpack DataStore: enabled=$isBlockingEnabled, sitesCount=${blockedSites.size}, keywordsCount=${blockedKeywords.size}, whitelistCount=${whitelistedSites.size}, blockedAppsCount=${blockedApps.size}, customDns=$customDns")
-            return DataStoreData(isBlockingEnabled, blockedSites, blockedKeywords, whitelistedSites, blockedApps, customDns)
+        return try {
+            fromPreferences(parsePreferences(dataStoreFile.readBytes()))
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing Jetpack DataStore file", e)
-            return DataStoreData()
+            Log.e(TAG, "Could not read the DataStore file", e)
+            DataStoreData()
         }
     }
 
-    private fun extractString(content: String, key: String): String {
-        val index = content.indexOf(key)
-        if (index == -1) return ""
+    internal fun fromPreferences(prefs: Map<String, Any>): DataStoreData = DataStoreData(
+        isBlockingEnabled = prefs["is_blocking_enabled"] == true,
+        blockedSites = readList(prefs["blocked_sites"]),
+        blockedKeywords = readList(prefs["blocked_keywords"]),
+        whitelistedSites = readList(prefs["whitelisted_sites"]),
+        blockedApps = readList(prefs["blocked_apps"]),
+        customDns = (prefs["custom_dns"] as? String)?.trim() ?: "",
+    )
 
-        val sub = content.substring(index + key.length)
-        val maxWindow = minOf(sub.length, 100)
-        val window = sub.substring(0, maxWindow)
+    /** Reads a list saved by the plugin, or a string set. Anything else is empty. */
+    private fun readList(value: Any?): Set<String> {
+        val items = when (value) {
+            is String -> {
+                if (!value.startsWith(LIST_PREFIX)) return emptySet()
+                val json = JSONArray(value.substring(LIST_PREFIX.length))
+                (0 until json.length()).map { json.getString(it) }
+            }
+            is Set<*> -> value.filterIsInstance<String>()
+            else -> return emptySet()
+        }
+        return items.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
+    }
 
-        val sb = StringBuilder()
-        var recording = false
-        for (ch in window) {
-            if (ch.isLetterOrDigit() || ch == '.' || ch == '-' || ch == ':') {
-                recording = true
-                sb.append(ch)
-            } else if (recording) {
-                if (sb.length >= 3) {
-                    break
-                } else {
-                    sb.clear()
-                    recording = false
+    /**
+     * Decodes DataStore's PreferenceMap protobuf: a list of key and value
+     * entries (field 1), each value holding one typed field. Returns booleans,
+     * strings, numbers and string sets; other types are skipped.
+     */
+    internal fun parsePreferences(bytes: ByteArray): Map<String, Any> {
+        val prefs = mutableMapOf<String, Any>()
+        val map = ProtoReader(bytes)
+        while (map.hasMore()) {
+            val (field, wireType) = map.readTag()
+            if (field != 1 || wireType != 2) { map.skip(wireType); continue }
+            val entry = ProtoReader(map.readBytes())
+            var key: String? = null
+            var value: Any? = null
+            while (entry.hasMore()) {
+                val (entryField, entryWire) = entry.readTag()
+                when {
+                    entryField == 1 && entryWire == 2 -> key = String(entry.readBytes(), Charsets.UTF_8)
+                    entryField == 2 && entryWire == 2 -> value = readValue(entry.readBytes())
+                    else -> entry.skip(entryWire)
                 }
             }
+            if (key != null && value != null) prefs[key] = value
         }
-        val result = sb.toString().trim()
-        return if (result.length >= 3) result else ""
+        return prefs
     }
 
-    private fun extractList(content: String, key: String): Set<String> {
-        val index = content.indexOf(key)
-        if (index == -1) return emptySet()
+    // Value message fields: 1 boolean, 2 float, 3 int, 4 long, 5 string,
+    // 6 string set, 7 double, 8 bytes
+    private fun readValue(bytes: ByteArray): Any? {
+        val value = ProtoReader(bytes)
+        while (value.hasMore()) {
+            val (field, wireType) = value.readTag()
+            when (field) {
+                1 -> return value.readVarint() != 0L
+                2 -> return java.lang.Float.intBitsToFloat(value.readFixed32())
+                3, 4 -> return value.readVarint()
+                5 -> return String(value.readBytes(), Charsets.UTF_8)
+                6 -> {
+                    val set = mutableSetOf<String>()
+                    val strings = ProtoReader(value.readBytes())
+                    while (strings.hasMore()) {
+                        val (stringField, stringWire) = strings.readTag()
+                        if (stringField == 1 && stringWire == 2) {
+                            set.add(String(strings.readBytes(), Charsets.UTF_8))
+                        } else {
+                            strings.skip(stringWire)
+                        }
+                    }
+                    return set
+                }
+                7 -> return java.lang.Double.longBitsToDouble(value.readFixed64())
+                else -> value.skip(wireType)
+            }
+        }
+        return null
+    }
 
-        val sub = content.substring(index)
-        val startBracket = sub.indexOf("[")
-        val endBracket = sub.indexOf("]")
-        if (startBracket == -1 || endBracket == -1 || endBracket < startBracket) return emptySet()
+    /** Reads the protobuf wire format, which is all this file needs. */
+    private class ProtoReader(private val bytes: ByteArray) {
+        private var pos = 0
 
-        val jsonArrayStr = sub.substring(startBracket + 1, endBracket)
-        if (jsonArrayStr.trim().isEmpty()) return emptySet()
+        fun hasMore() = pos < bytes.size
 
-        return jsonArrayStr.split(",")
-            .map { it.trim().replace("\"", "").lowercase() }
-            .filter { it.isNotEmpty() }
-            .toSet()
+        fun readVarint(): Long {
+            var result = 0L
+            var shift = 0
+            while (true) {
+                if (pos >= bytes.size || shift > 63) throw IllegalArgumentException("Bad varint")
+                val b = bytes[pos++].toInt() and 0xFF
+                result = result or ((b and 0x7F).toLong() shl shift)
+                if (b < 0x80) return result
+                shift += 7
+            }
+        }
+
+        fun readTag(): Pair<Int, Int> {
+            val tag = readVarint().toInt()
+            return (tag ushr 3) to (tag and 7)
+        }
+
+        fun readBytes(): ByteArray {
+            val length = readVarint().toInt()
+            if (length < 0 || pos + length > bytes.size) throw IllegalArgumentException("Bad length")
+            return bytes.copyOfRange(pos, pos + length).also { pos += length }
+        }
+
+        fun readFixed32(): Int {
+            if (pos + 4 > bytes.size) throw IllegalArgumentException("Truncated")
+            var result = 0
+            for (i in 0 until 4) result = result or ((bytes[pos + i].toInt() and 0xFF) shl (8 * i))
+            pos += 4
+            return result
+        }
+
+        fun readFixed64(): Long {
+            if (pos + 8 > bytes.size) throw IllegalArgumentException("Truncated")
+            var result = 0L
+            for (i in 0 until 8) result = result or ((bytes[pos + i].toLong() and 0xFF) shl (8 * i))
+            pos += 8
+            return result
+        }
+
+        fun skip(wireType: Int) {
+            when (wireType) {
+                0 -> readVarint()
+                1 -> readFixed64()
+                2 -> readBytes()
+                5 -> readFixed32()
+                else -> throw IllegalArgumentException("Unknown wire type $wireType")
+            }
+        }
     }
 }

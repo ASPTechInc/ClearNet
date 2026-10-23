@@ -55,6 +55,9 @@ It complements what is documented in the [README](/README.md).
 - **Upgrade Flutter**: `flutter upgrade`
 - **Check Flutter version**: `flutter --version`
 
+> **Note:** The Flutter version used in this project is 3.47.7
+> New Flutter versions should be updated in the GitHub Actions workflows (`.github/workflows/ci.yml` and `.github/workflows/release.yml`) and the F-Droid metadata (`metadata/com.asptechinc.clearnet.yml`).
+
 ---
 
 ## Updating app version notes
@@ -354,8 +357,13 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
 
 ## F-Droid release notes
 
-1. Create a [`.fdroid.yml`](.fdroid.yml) file in the root of your project and
-   [`metadata/com.   asptechinc.clearnet.yml`](metadata/com.asptechinc.clearnet.yml)
+> Each `.txt` file in `fastlane/metadata/android/en-GB/changelogs/` corresponds to a changelog entry for a specific version of the ClearNet FOSS app. The maximum supported length for each changelog entry is 500 characters.
+
+1. Update the build recipe in
+   [`metadata/com.asptechinc.clearnet.yml`](metadata/com.asptechinc.clearnet.yml)
+   (new `Builds` entry, `CurrentVersion` and `CurrentVersionCode`). Keep the
+   `flutter@` srclib version in step with the Flutter version used for releases.
+   The store listing text comes from `fastlane/metadata/android/`.
 
 2. **Tag the release on Git:**
    Ensure that the release is tagged in the main GitHub repository:
@@ -380,11 +388,18 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
      git push origin main
      ```
 
-5. **(Optional) Local Linting with `fdroidserver`:**
+5. **(Optional) Local linting with `fdroidserver`:**
    If you have `fdroidserver` or Docker installed:
 
    ```bash
    fdroid lint com.asptechinc.clearnet
+   ```
+
+6. Build release version of app for F-Droid distribution:
+   ```bash
+   fdroid build com.asptechinc.clearnet
+
+   flutter build apk --release --dart-define=FDROID_BUILD=true
    ```
 
 6. **Open a merge request:**
