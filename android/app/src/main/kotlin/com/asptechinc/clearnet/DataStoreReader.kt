@@ -4,6 +4,7 @@
 package com.asptechinc.clearnet
 
 import android.content.Context
+import android.system.Os
 import android.util.Log
 import java.io.File
 import org.json.JSONArray
@@ -30,8 +31,43 @@ object DataStoreReader {
         val customDns: String = ""
     )
 
+    // The last result of readDataCached() and the file it was read from
+    private var cachedVersion: List<Long>? = null
+    private var cachedData: DataStoreData? = null
+
+    private fun dataStoreFile(context: Context) =
+        File(context.filesDir, "datastore/FlutterSharedPreferences.preferences_pb")
+
+    /**
+     * Like [readData], but only reads the file again after it has changed. For
+     * callers that read on every event, such as the accessibility service.
+     */
+    @Synchronized
+    fun readDataCached(context: Context): DataStoreData {
+        val version = fileVersion(dataStoreFile(context))
+        val cached = cachedData
+        if (version != null && version == cachedVersion && cached != null) return cached
+
+        val data = readData(context)
+        cachedVersion = version
+        cachedData = data
+        return data
+    }
+
+    /**
+     * Identifies one saved version of [file]. DataStore saves by writing a new
+     * file and renaming it over the old one, so the inode changes on every
+     * save; the time and size catch files rewritten in place.
+     */
+    private fun fileVersion(file: File): List<Long>? = try {
+        val stat = Os.stat(file.path)
+        listOf(stat.st_ino, file.lastModified(), stat.st_size)
+    } catch (e: Exception) {
+        null
+    }
+
     fun readData(context: Context): DataStoreData {
-        val dataStoreFile = File(context.filesDir, "datastore/FlutterSharedPreferences.preferences_pb")
+        val dataStoreFile = dataStoreFile(context)
         if (!dataStoreFile.exists()) {
             Log.w(TAG, "DataStore file does not exist: ${dataStoreFile.absolutePath}")
             return DataStoreData()

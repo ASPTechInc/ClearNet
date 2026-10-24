@@ -26,8 +26,9 @@ import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/data/services/theme_service.dart';
 import 'package:clearnet/presentation/navigation/app_routes.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/pin_pad_screen.dart';
 import 'package:clearnet/presentation/widgets/markdown_text.dart';
+import 'package:clearnet/presentation/widgets/set_pin_dialogue.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -294,27 +295,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (value) {
       if (!_isAppPinSet) {
         if (!mounted) return;
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PinLockScreen(
-              confirmMode: true,
-              pinKey: Constants.appPinKey,
-              title: 'Set App PIN',
-              onSuccess: () async {
-                await storage.write(
-                  key: Constants.appLockEnabledKey,
-                  value: 'true',
-                );
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('App PIN set successfully')),
-                );
-              },
-            ),
+        final saved = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const SetPinDialogue(
+            pinKey: Constants.appPinKey,
+            title: 'Set App PIN',
           ),
         );
+        if (saved == true) {
+          await storage.write(key: Constants.appLockEnabledKey, value: 'true');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('App PIN set successfully')),
+            );
+          }
+        }
         _loadSettings();
         return;
       }
@@ -332,36 +328,20 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _changeAppPin() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PinLockScreen(
-          pinKey: Constants.appPinKey,
-          title: 'Verify Current App PIN',
-          onSuccess: () async {
-            Navigator.pop(context);
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PinLockScreen(
-                  confirmMode: true,
-                  pinKey: Constants.appPinKey,
-                  title: 'Set New App PIN',
-                  onSuccess: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('App PIN changed successfully'),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
-        ),
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const SetPinDialogue(
+        pinKey: Constants.appPinKey,
+        title: 'Change App PIN',
+        requireCurrentPin: true,
       ),
     );
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('App PIN changed successfully')),
+      );
+    }
     _loadSettings();
   }
 
@@ -393,23 +373,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (confirmed != true) return;
 
     if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PinLockScreen(
-          confirmMode: true,
-          pinKey: Constants.uninstallPinKey,
-          title: 'Set Uninstall PIN',
-          onSuccess: () {
-            unawaited(UninstallProtectionController.sync());
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Uninstall PIN set successfully')),
-            );
-          },
-        ),
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const SetPinDialogue(
+        pinKey: Constants.uninstallPinKey,
+        title: 'Set Uninstall PIN',
       ),
     );
+    if (saved == true) {
+      unawaited(UninstallProtectionController.sync());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uninstall PIN set successfully')),
+        );
+      }
+    }
     _loadSettings();
   }
 
@@ -419,9 +398,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PinLockScreen(
+          builder: (context) => PinPadScreen(
             pinKey: Constants.appPinKey,
             title: 'Verify App PIN',
+            showBackButton: true,
             onSuccess: () {
               AppSession.isSettingsUnlocked = true;
               Navigator.pop(context);
@@ -1187,9 +1167,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             enableAutoScroll: true,
             isLastStep: true,
             title: 'Replay feature tour',
-            description:
-                'Reset and replay the feature walkthrough across all screens '
-                'at any time.',
+            description: 'Watch the key features of the application again.',
             child: ListTile(
               title: const Text('Replay app tour'),
               subtitle: const Text(

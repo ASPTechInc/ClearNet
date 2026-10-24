@@ -382,6 +382,17 @@ class BlocklistManager {
     });
   }
 
+  /// Name for an exported backup, e.g. clearnet-backup-20261024-143205.backup.
+  /// The file holds the same JSON as exportToJson().
+  static String backupFileName([DateTime? now]) {
+    final t = now ?? DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final date = '${t.year}${two(t.month)}${two(t.day)}';
+    final time = '${two(t.hour)}${two(t.minute)}${two(t.second)}';
+    return '${Constants.appName.toLowerCase()}-backup-$date-$time'
+        '.${Constants.backupFileExtension}';
+  }
+
   /// Import user settings from JSON string
   static Future<void> importFromJson(
     String jsonString, {

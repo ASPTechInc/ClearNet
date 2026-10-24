@@ -37,8 +37,8 @@ void main() {
   ];
   const settingsSteps = [
     'App lock',
-    'Disguise mode',
     'Uninstall protection',
+    'Disguise mode',
     'Secure DNS Resolver',
     'Replay feature tour',
   ];
@@ -70,6 +70,9 @@ void main() {
           (call) async => switch (call.method) {
             'isAccessibilityServiceEnabled' => true,
             'isIgnoringBatteryOptimizations' => true,
+            // Null would make the Content tab show an error SnackBar that
+            // covers the Settings tiles the tests tap
+            'getInstalledApps' => <Map<String, String>>[],
             _ => null,
           },
         );

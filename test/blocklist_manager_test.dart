@@ -236,5 +236,12 @@ void main() {
         isFalse,
       );
     });
+
+    test('backupFileName uses app name, date and time', () {
+      expect(
+        BlocklistManager.backupFileName(DateTime(2026, 1, 4, 9, 5, 7)),
+        'clearnet-backup-20260104-090507.backup',
+      );
+    });
   });
 }

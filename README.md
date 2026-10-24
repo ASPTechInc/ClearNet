@@ -47,7 +47,7 @@ It blocks harmful websites and chosen apps, and needs a PIN before it can be swi
 | **Website blocking**            | A local VPN checks every DNS lookup on the device. Lookups for blocked domains fail straight away; everything else is forwarded to your DNS server. Comes with a built-in blocklist of adult domains, and you can add your own. |
 | **Keyword filtering**           | Blocks domains that contain your keywords, and shows the blocked page when they appear on screen in a supported browser. |
 | **SafeSearch**                  | Google, Bing and YouTube searches are sent to their SafeSearch versions. Other Google services, such as Gmail and the Play Store, work normally. |
-| **Blocklist import and export** | Back up and restore your domains and keywords as `blocklist.json`. |
+| **Blocklist import and export** | Back up and restore your domains and keywords as a `.backup` file (JSON inside), e.g. `clearnet-backup-20261024-143205.backup`. |
 | **Custom DNS**                  | Use your own DNS server (e.g. Quad9). By default, allowed lookups go to UncensoredDNS, AdGuard DNS or Quad9. |
 | **App disguise**                | Show ClearNet as a Calculator or Notes app on the home screen. |
 | **App lock**                    | Optionally ask for a 8 to 16 digit app PIN when ClearNet starts. ClearNet closes itself after you leave it (immediately, after 1 minute or after 5 minutes), so the PIN is needed again. |
@@ -126,7 +126,7 @@ ClearNet targets parents who want a safe device environment for their kids and o
 - **Private DNS:** if Android's Private DNS is set to a specific provider, websites won't load while blocking is on. ClearNet stops encrypted DNS so it can't be used to get around the filter. Set Private DNS to *Off* or *Automatic*.
 - **Secure DNS in browsers:** encrypted DNS to well-known providers (such as Google, Cloudflare, Quad9 and NextDNS) is blocked, so browsers fall back to normal DNS, which ClearNet filters.
 - **Other VPNs:** Android allows one VPN at a time, so ClearNet can't run alongside another VPN app.
-- **After a restart or update:** open ClearNet once and blocking starts again.
+- **After a restart or update:** blocking starts again by itself if it was on. If Android stops it anyway, open ClearNet once. For the strongest protection, also set ClearNet as the *Always-on VPN* in Android's VPN settings.
 
 ---
 

@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 // Project imports:
 import 'package:clearnet/data/controllers/uninstall_protection_controller.dart';
 import 'package:clearnet/data/services/pin_service.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/pin_pad_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 /// Shown when someone tries to remove ClearNet's protection, such as its device
@@ -60,7 +60,7 @@ class _UninstallPinScreenState extends State<UninstallPinScreen> {
     // Back is blocked, so this screen can only be left with the PIN or Home
     return PopScope(
       canPop: false,
-      child: PinLockScreen(
+      child: PinPadScreen(
         pinKey: Constants.uninstallPinKey,
         title: 'Enter Uninstall PIN',
         onSuccess: () => unawaited(_allowAndClose()),

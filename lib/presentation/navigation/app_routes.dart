@@ -11,7 +11,6 @@ import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_access_screen.dart';
 import 'package:clearnet/presentation/screens/blocked_content.dart';
 import 'package:clearnet/presentation/screens/guide_screen.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
 import 'package:clearnet/presentation/screens/protection_screen.dart';
 import 'package:clearnet/presentation/screens/settings_screen.dart';
 import 'package:clearnet/presentation/screens/uninstall_pin_screen.dart';
@@ -19,7 +18,6 @@ import 'package:clearnet/presentation/screens/uninstall_pin_screen.dart';
 class AppRoutes {
   static const String root = '/';
   static const String verifyUninstallPin = '/verify_uninstall_pin';
-  static const String setupPin = '/setup_pin';
   static const String settingsPath = '/settings';
   static const String home = '/protection';
   static const String blocked = '/blocked';
@@ -53,9 +51,6 @@ class AppRoutes {
       case verifyUninstallPin:
         return const UninstallPinScreen();
 
-      case setupPin:
-        return const PinLockScreen(confirmMode: true);
-
       default:
         return Scaffold(
           body: Center(child: Text('No route defined for $route')),
@@ -77,7 +72,6 @@ class AppRoutes {
         );
 
       case verifyUninstallPin:
-      case setupPin:
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => getScreen(routeName),

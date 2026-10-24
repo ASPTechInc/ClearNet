@@ -47,9 +47,10 @@ class AppBlockService : AccessibilityService() {
         // Runs even while blocking is paused, so pausing can't be used to remove ClearNet
         if (guardProtectedScreens(eventType, packageName)) return
 
-        // Settings saved by the Flutter app. Reading them on every event is
-        // how changes made in the app are picked up.
-        val data = DataStoreReader.readData(this)
+        // Settings saved by the Flutter app. Checking them on every event is
+        // how changes made in the app are picked up; the file is only read
+        // again after it changes.
+        val data = DataStoreReader.readDataCached(this)
         if (!data.isBlockingEnabled) return
 
         // Block apps
