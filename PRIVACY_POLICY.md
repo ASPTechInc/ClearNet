@@ -33,7 +33,9 @@ ClearNet does not send your data to its developers or to any server it runs. It 
 
 ## Permissions
 
+- **Internet:** used for the connections listed under "Network connections" above.
 - **VPN service:** used to filter DNS lookups as described above. ClearNet does not route your general traffic through a remote VPN server.
+- **Run at startup:** used to start the VPN again after the device restarts or ClearNet is updated, if blocking was on.
 - **Accessibility service:** used to detect which app is open so blocked apps can be closed. In supported browsers, ClearNet also reads the text on screen, such as the address bar, and checks it against your blocked keywords and domains. If an uninstall PIN is set, ClearNet also checks screens in the Settings app for its own device admin and accessibility pages, so they can't be used to remove it without the PIN. These checks happen on the device. Screen content is not stored or sent anywhere.
 - **Device administrator:** used to stop ClearNet being uninstalled or switched off without the PIN. ClearNet does not use it to wipe, lock or reset your device.
 - **Ignore battery optimisations:** used so Android does not stop the filtering service in the background.

@@ -13,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:clearnet/data/services/pin_service.dart';
 import 'package:clearnet/presentation/screens/uninstall_pin_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
+import 'pin_pad_helpers.dart';
+
+// Relative imports:
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,13 +37,8 @@ void main() {
 
   bool closed() => systemCalls.any((call) => call.method == 'closeApp');
 
-  /// Taps Submit and waits for PIN hashing, which runs in a real isolate.
   Future<void> submit(WidgetTester tester, String pin) async {
-    await tester.enterText(find.byType(TextField), pin);
-    await tester.runAsync(() async {
-      await tester.tap(find.byType(ElevatedButton));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-    });
+    await enterPinOnPad(tester, pin);
     await tester.pump();
   }
 

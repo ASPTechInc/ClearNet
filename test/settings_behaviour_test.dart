@@ -61,9 +61,25 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  Future<void> showSettingsAt(WidgetTester tester, Finder target) async {
+  /// Opens Settings and scrolls to [target]. Tiles in the About section need
+  /// [inAbout], because that section starts collapsed.
+  Future<void> showSettingsAt(
+    WidgetTester tester,
+    Finder target, {
+    bool inAbout = false,
+  }) async {
     await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
     await tester.pumpAndSettle();
+    if (inAbout) {
+      final about = find.text('About');
+      await tester.scrollUntilVisible(
+        about,
+        200.0,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(about);
+      await tester.pumpAndSettle();
+    }
     await tester.scrollUntilVisible(
       target,
       200.0,
@@ -156,7 +172,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final tile = find.text('Open-source licences');
-    await showSettingsAt(tester, tile);
+    await showSettingsAt(tester, tile, inAbout: true);
 
     await tester.tap(tile);
     await tester.pumpAndSettle();
@@ -168,7 +184,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final tile = find.text('Changelog');
-    await showSettingsAt(tester, tile);
+    await showSettingsAt(tester, tile, inAbout: true);
 
     await tester.tap(tile);
     await tester.pumpAndSettle();
@@ -183,7 +199,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final tile = find.text('Privacy policy');
-    await showSettingsAt(tester, tile);
+    await showSettingsAt(tester, tile, inAbout: true);
 
     await tester.tap(tile);
     await tester.pumpAndSettle();

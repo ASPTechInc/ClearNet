@@ -17,6 +17,7 @@ class Constants {
   static const String methodChannelName = 'app_control/channel';
   static const String blocklistAsset = 'assets/data/blocklist.json';
   static const String blocklistFileName = 'blocklist.json';
+  static const String backupFileExtension = 'backup';
   static const String themeModeKey = 'theme_mode';
   static const String blockedAppsKey = 'blocked_apps';
   static const String blockedWebsitesCountKey = 'blocked_websites_count';

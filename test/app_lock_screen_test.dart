@@ -18,11 +18,19 @@ import 'package:clearnet/data/services/pin_service.dart';
 import 'package:clearnet/presentation/screens/app_lock_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
-/// Taps Submit and waits for PIN hashing, which runs in a real isolate that
+/// Types [pin] on the number pad.
+Future<void> typePin(WidgetTester tester, String pin) async {
+  for (final digit in pin.split('')) {
+    await tester.tap(find.byKey(Key('pin_key_$digit')));
+  }
+  await tester.pump();
+}
+
+/// Taps the tick and waits for PIN hashing, which runs in a real isolate that
 /// the test's fake clock doesn't wait for.
 Future<void> submit(WidgetTester tester) async {
   await tester.runAsync(() async {
-    await tester.tap(find.byType(ElevatedButton));
+    await tester.tap(find.byKey(const Key('pin_key_enter')));
     await Future<void>.delayed(const Duration(milliseconds: 500));
   });
   await tester.pumpAndSettle();
@@ -88,7 +96,7 @@ void main() {
       expect(find.text('Home Screen'), findsOneWidget);
     });
 
-    testWidgets('shows PinLockScreen if App PIN set and App Lock enabled', (
+    testWidgets('shows the number pad if App PIN set and App Lock enabled', (
       WidgetTester tester,
     ) async {
       await setAppPin(tester);
@@ -96,10 +104,11 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Enter App PIN'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.byKey(const Key('pin_key_0')), findsOneWidget);
+      expect(find.text('Enter PIN'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '123456789');
+      await typePin(tester, '123456789');
       await submit(tester);
 
       expect(find.text('Home Screen'), findsOneWidget);
@@ -114,7 +123,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Home Screen'), findsOneWidget);
-        expect(find.text('Enter App PIN'), findsNothing);
+        expect(find.text('Enter PIN'), findsNothing);
       },
     );
 
@@ -124,11 +133,54 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), '987654321');
+      await typePin(tester, '987654321');
       await submit(tester);
 
       expect(find.text('Home Screen'), findsNothing);
-      expect(find.text('Enter App PIN'), findsOneWidget);
+      expect(find.text('Enter PIN'), findsOneWidget);
+      expect(find.text('Incorrect PIN'), findsOneWidget);
+    });
+
+    testWidgets('tick is disabled until the PIN is long enough', (
+      WidgetTester tester,
+    ) async {
+      await setAppPin(tester);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      FilledButton enter() =>
+          tester.widget<FilledButton>(find.byKey(const Key('pin_key_enter')));
+
+      await typePin(tester, '1234567');
+      expect(enter().onPressed, isNull);
+
+      await typePin(tester, '8');
+      expect(enter().onPressed, isNotNull);
+    });
+
+    testWidgets('C clears and backspace removes one digit', (
+      WidgetTester tester,
+    ) async {
+      await setAppPin(tester);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // A wrong digit is cleared with backspace, then the right PIN still works
+      await typePin(tester, '555');
+      await tester.tap(find.byKey(const Key('pin_key_backspace')));
+      await tester.tap(find.byKey(const Key('pin_key_backspace')));
+      await tester.tap(find.byKey(const Key('pin_key_backspace')));
+      await tester.pump();
+
+      // A wrong last digit is removed with backspace
+      await typePin(tester, '1234567899');
+      await tester.tap(find.byKey(const Key('pin_key_backspace')));
+      await tester.pump();
+      await submit(tester);
+
+      expect(find.text('Home Screen'), findsOneWidget);
     });
   });
 
@@ -140,7 +192,7 @@ void main() {
       }
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '123456789');
+      await typePin(tester, '123456789');
       await submit(tester);
       expect(find.text('Home Screen'), findsOneWidget);
     }
@@ -209,7 +261,7 @@ void main() {
       await setLifecycle(tester, AppLifecycleState.paused);
       await setLifecycle(tester, AppLifecycleState.resumed);
 
-      expect(find.text('Enter App PIN'), findsOneWidget);
+      expect(find.text('Enter PIN'), findsOneWidget);
       expect(find.text('Home Screen'), findsNothing);
     });
 

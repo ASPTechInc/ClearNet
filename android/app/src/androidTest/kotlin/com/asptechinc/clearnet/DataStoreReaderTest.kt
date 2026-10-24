@@ -11,6 +11,7 @@ import org.json.JSONArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -190,6 +191,41 @@ class DataStoreReaderTest {
             entry("is_blocking_enabled", boolValue(true)),
         )
         assertTrue(DataStoreReader.readData(context).isBlockingEnabled)
+    }
+
+    @Test
+    fun readDataCached_returnsTheSameResultWhileTheFileIsUnchanged() {
+        writeFile(entry("blocked_sites", listValue("a.com")))
+
+        val first = DataStoreReader.readDataCached(context)
+        val second = DataStoreReader.readDataCached(context)
+
+        assertEquals(setOf("a.com"), first.blockedSites)
+        assertSame(first, second)
+    }
+
+    @Test
+    fun readDataCached_picksUpASaveMadeTheWayDataStoreDoesIt() {
+        writeFile(entry("is_blocking_enabled", boolValue(false)))
+        assertFalse(DataStoreReader.readDataCached(context).isBlockingEnabled)
+
+        // DataStore writes a new file and renames it over the old one. Same
+        // size as before, so only the new inode shows the change.
+        val scratch = File(dataStoreDir, dataStoreFile.name + ".tmp")
+        scratch.writeBytes(entry("is_blocking_enabled", boolValue(true)))
+        assertTrue(scratch.renameTo(dataStoreFile))
+
+        assertTrue(DataStoreReader.readDataCached(context).isBlockingEnabled)
+    }
+
+    @Test
+    fun readDataCached_withoutAFileGivesDefaults() {
+        writeFile(entry("is_blocking_enabled", boolValue(true)))
+        assertTrue(DataStoreReader.readDataCached(context).isBlockingEnabled)
+
+        dataStoreFile.delete()
+
+        assertFalse(DataStoreReader.readDataCached(context).isBlockingEnabled)
     }
 
     @Test

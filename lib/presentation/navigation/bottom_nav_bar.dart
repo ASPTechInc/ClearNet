@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Project imports:
 import 'package:clearnet/presentation/navigation/app_routes.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/pin_pad_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -95,7 +95,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
 /// A wrapper widget that enforces PIN lock verification before displaying
 /// its [child].
 /// If lock settings is enabled and [AppSession.isSettingsUnlocked] is false,
-/// [PinLockScreen] is displayed until the user enters the correct PIN.
+/// [PinPadScreen] is displayed until the user enters the correct PIN.
 class PinGuardedTab extends StatefulWidget {
   const PinGuardedTab({super.key, required this.child});
 
@@ -138,7 +138,7 @@ class _PinGuardedTabState extends State<PinGuardedTab> {
 
         if (isLocked && !AppSession.isSettingsUnlocked) {
           // Settings use the app PIN; there's no separate Settings PIN
-          return PinLockScreen(
+          return PinPadScreen(
             pinKey: Constants.appPinKey,
             title: 'Verify App PIN',
             onSuccess: () {

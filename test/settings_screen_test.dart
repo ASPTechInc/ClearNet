@@ -31,6 +31,19 @@ void main() {
   final inMemoryStore = InMemorySharedPreferencesAsync.empty();
   SharedPreferencesAsyncPlatform.instance = inMemoryStore;
 
+  /// The About section starts collapsed, so its tiles aren't built until it
+  /// is expanded.
+  Future<void> expandAboutSection(WidgetTester tester) async {
+    final about = find.text('About');
+    await tester.scrollUntilVisible(
+      about,
+      200.0,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(about);
+    await tester.pumpAndSettle();
+  }
+
   group('SettingsScreen Visibility Tests', () {
     late Directory tempDir;
 
@@ -125,7 +138,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Appearance'), findsOneWidget);
+      expect(find.text('General'), findsOneWidget);
       expect(find.text('Theme'), findsOneWidget);
     });
 
@@ -281,6 +294,193 @@ void main() {
       );
     });
 
+    testWidgets('Set app PIN opens a dialog with PIN and Confirm PIN', (
+      WidgetTester tester,
+    ) async {
+      await showSecurity(tester, title: 'Set app PIN');
+
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Set app PIN'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Set App PIN'), findsOneWidget);
+      expect(find.byKey(const Key('set_pin_field')), findsOneWidget);
+      expect(find.byKey(const Key('confirm_pin_field')), findsOneWidget);
+    });
+
+    testWidgets('Set App PIN dialog rejects PINs that do not match', (
+      WidgetTester tester,
+    ) async {
+      await showSecurity(tester, title: 'Set app PIN');
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Set app PIN'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('set_pin_field')),
+        '123456789',
+      );
+      await tester.enterText(
+        find.byKey(const Key('confirm_pin_field')),
+        '123456780',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PINs do not match'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(await PinService.hasPin(Constants.appPinKey), isFalse);
+    });
+
+    testWidgets('Set App PIN dialog saves the PIN and turns app lock on', (
+      WidgetTester tester,
+    ) async {
+      await showSecurity(tester, title: 'Set app PIN');
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Set app PIN'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('set_pin_field')),
+        '123456789',
+      );
+      await tester.enterText(
+        find.byKey(const Key('confirm_pin_field')),
+        '123456789',
+      );
+      // Hashing runs in a real isolate, which the fake clock doesn't wait for
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Save'));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('App PIN set successfully'), findsOneWidget);
+      expect(switchValue(tester, 'Set app PIN'), isTrue);
+      expect(
+        await tester.runAsync(
+          () => PinService.verifyPin(Constants.appPinKey, '123456789'),
+        ),
+        isTrue,
+      );
+    });
+
+    /// Fills in the set-PIN dialog with [pin] twice and saves it.
+    Future<void> saveInDialog(WidgetTester tester, String pin) async {
+      await tester.enterText(find.byKey(const Key('set_pin_field')), pin);
+      await tester.enterText(find.byKey(const Key('confirm_pin_field')), pin);
+      // Hashing runs in a real isolate, which the fake clock doesn't wait for
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Save'));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      });
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tapTile(WidgetTester tester, String title) async {
+      final tile = find.widgetWithText(ListTile, title);
+      await tester.scrollUntilVisible(
+        tile,
+        200.0,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Change app PIN asks for the current and new PIN in a dialog', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Change app PIN');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Change App PIN'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('current_pin_field')),
+        '123456789',
+      );
+      await saveInDialog(tester, '111122223');
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('App PIN changed successfully'), findsOneWidget);
+      expect(
+        await tester.runAsync(
+          () => PinService.verifyPin(Constants.appPinKey, '111122223'),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('Change app PIN keeps the old PIN if the current is wrong', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Change app PIN');
+
+      await tester.enterText(
+        find.byKey(const Key('current_pin_field')),
+        '999999999',
+      );
+      await saveInDialog(tester, '111122223');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Incorrect PIN'), findsOneWidget);
+      expect(
+        await tester.runAsync(
+          () => PinService.verifyPin(Constants.appPinKey, '123456789'),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('Change app PIN rejects a new PIN equal to the current PIN', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Change app PIN');
+
+      await tester.enterText(
+        find.byKey(const Key('current_pin_field')),
+        '123456789',
+      );
+      await saveInDialog(tester, '123456789');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        find.text('New PIN must be different from\nthe current PIN'),
+        findsOneWidget,
+      );
+      expect(find.text('App PIN changed successfully'), findsNothing);
+    });
+
+    testWidgets('Uninstall PIN is set in a dialog after the warning', (
+      WidgetTester tester,
+    ) async {
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Uninstall PIN');
+
+      expect(find.text('Set permanent PIN'), findsOneWidget);
+      await tester.tap(find.text('Proceed'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set Uninstall PIN'), findsOneWidget);
+      expect(find.byKey(const Key('confirm_pin_field')), findsOneWidget);
+      await saveInDialog(tester, '987654321');
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Uninstall PIN set successfully'), findsOneWidget);
+      expect(
+        await tester.runAsync(
+          () => PinService.verifyPin(Constants.uninstallPinKey, '987654321'),
+        ),
+        isTrue,
+      );
+    });
+
     testWidgets(
       'Clear content dialog opens and clears blocklist & blocked apps '
       'on confirm',
@@ -425,6 +625,7 @@ void main() {
         const MaterialApp(home: SettingsScreen(key: Key('privacy_test'))),
       );
       await tester.pumpAndSettle();
+      await expandAboutSection(tester);
 
       final privacyFinder = find.widgetWithText(ListTile, 'Privacy policy');
       await tester.scrollUntilVisible(
@@ -460,6 +661,7 @@ void main() {
         const MaterialApp(home: SettingsScreen(key: Key('license_test'))),
       );
       await tester.pumpAndSettle();
+      await expandAboutSection(tester);
 
       final licenseFinder = find.widgetWithText(ListTile, 'Licence');
       await tester.scrollUntilVisible(
@@ -484,6 +686,7 @@ void main() {
         const MaterialApp(home: SettingsScreen(key: Key('source_test'))),
       );
       await tester.pumpAndSettle();
+      await expandAboutSection(tester);
 
       final sourceFinder = find.widgetWithText(ListTile, 'Source code');
       await tester.scrollUntilVisible(
@@ -517,6 +720,7 @@ void main() {
         const MaterialApp(home: SettingsScreen(key: Key('donate_test'))),
       );
       await tester.pumpAndSettle();
+      await expandAboutSection(tester);
 
       final donateFinder = find.widgetWithText(ListTile, 'Donate');
       await tester.scrollUntilVisible(

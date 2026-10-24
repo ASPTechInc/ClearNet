@@ -480,9 +480,12 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     if (await _isLockedFor('import a blocklist')) return;
     try {
       AppLockService.expectExternalActivity();
+      // Android has no MIME type for .backup, so the picker shows all files.
+      // Don't add 'json' here: the picker would then show only .json files.
+      // Older .json exports can still be picked.
       final result = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: [Constants.backupFileExtension],
       );
 
       if (result != null && result.path != null) {
@@ -511,7 +514,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
       AppLockService.expectExternalActivity();
       final result = await FilePicker.saveFile(
         dialogTitle: 'Export Blocklist',
-        fileName: Constants.blocklistFileName,
+        fileName: BlocklistManager.backupFileName(),
         bytes: utf8.encode(jsonString),
       );
 
@@ -541,8 +544,8 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
             key: _importExportKey,
             title: 'Import & Export',
             description:
-                'Import a custom blocklist file or export your current '
-                'configuration to JSON.',
+                'Import a backup file or export your current '
+                'configuration to a backup file.',
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -550,13 +553,13 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
                   key: const Key('import_button'),
                   icon: const Icon(Icons.file_upload),
                   onPressed: _importFromFile,
-                  tooltip: 'Import ${Constants.blocklistFileName}',
+                  tooltip: 'Import backup',
                 ),
                 IconButton(
                   key: const Key('export_button'),
                   icon: const Icon(Icons.file_download),
                   onPressed: _exportToFile,
-                  tooltip: 'Export ${Constants.blocklistFileName}',
+                  tooltip: 'Export backup',
                 ),
               ],
             ),
@@ -689,7 +692,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'User-added domains are merged with the built-in blocklist.',
+            'Domains added are merged with the built-in block list.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),

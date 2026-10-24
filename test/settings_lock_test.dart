@@ -16,6 +16,9 @@ import 'package:clearnet/data/services/pin_service.dart';
 import 'package:clearnet/presentation/navigation/bottom_nav_bar.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
+import 'pin_pad_helpers.dart';
+
+// Relative imports:
 
 /// Tests that the Settings tab lock is unlocked with the app PIN.
 void main() {
@@ -41,11 +44,7 @@ void main() {
   );
 
   Future<void> enterPin(WidgetTester tester, String pin) async {
-    await tester.enterText(find.byType(TextField), pin);
-    await tester.runAsync(() async {
-      await tester.tap(find.byType(ElevatedButton));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-    });
+    await enterPinOnPad(tester, pin);
     await tester.pumpAndSettle();
   }
 

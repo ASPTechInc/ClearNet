@@ -13,7 +13,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // Project imports:
 import 'package:clearnet/data/services/app_lock_service.dart';
-import 'package:clearnet/presentation/screens/pin_screen.dart';
+import 'package:clearnet/presentation/screens/pin_pad_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
@@ -138,9 +138,9 @@ class _AppLockScreenState extends State<AppLockScreen>
     }
 
     if (_isLocked) {
-      return PinLockScreen(
+      return PinPadScreen(
         pinKey: Constants.appPinKey,
-        title: 'Enter App PIN',
+        title: 'Enter PIN',
         onSuccess: _unlock,
       );
     }
