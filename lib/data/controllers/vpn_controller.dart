@@ -11,7 +11,7 @@ import 'package:clearnet/shared/utilities/constants.dart';
 class VpnController {
   static const platform = MethodChannel(Constants.methodChannelName);
 
-  /// Start VPN. The first time, Android shows its VPN permission screen.
+  /// Start VPN. The first time android shows its VPN permission screen.
   static Future<void> startVpn() async {
     AppLockService.expectExternalActivity();
     await platform.invokeMethod('startVpn');

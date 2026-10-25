@@ -1,9 +1,11 @@
 Initial release of ClearNet FOSS
-- Content-control app built with Flutter.
-- Uninstall protection via safe Device Admin rules.
-- Offline custom domain & keyword website blocklist filtering.
-- Local VPNService filters DNS lookups on the device.
-- SafeSearch enforcement for Google, Bing and YouTube.
-- Blocklist JSON import/export & custom DNS support.
-- Interactive disable confirmation security challenge.
-- Privacy-focused: no remote cloud accounts, trackers or ads.
+- Website blocking: local VPN DNS filter with domain, keyword and allow lists.
+- Browser checks that keep working with another VPN on.
+- App blocking.
+- SafeSearch for Google, Bing and YouTube.
+- Uninstall protection via Device Admin and PIN.
+- App lock with PIN reset, settings lock and disguise.
+- Disable confirmation challenge.
+- Blocklist backup/restore and custom DNS.
+- Stats and themes.
+- No accounts, trackers or ads.

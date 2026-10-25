@@ -1,7 +1,7 @@
 # Contributing to ClearNet
 
 Thanks for your interest in contributing to **ClearNet**!
-ClearNet is a free and open-source (FOSS) content-control app, and contributions of all sizes are welcome.
+ClearNet is a free and open-source (FOSS) content-control app and contributions of all sizes are welcome.
 
 ---
 

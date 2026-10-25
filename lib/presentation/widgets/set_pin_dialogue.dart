@@ -9,21 +9,28 @@ import 'package:flutter/services.dart';
 import 'package:clearnet/data/services/pin_service.dart';
 
 /// Asks for a new PIN twice (PIN and Confirm PIN) and saves it under
-/// [pinKey]. Closes with true once saved, or null if cancelled.
+/// [pinKey]. Closes with true once saved or null if cancelled.
 ///
 /// With [requireCurrentPin], it also asks for the PIN already saved under
 /// [pinKey] and only saves the new one if that is correct.
+///
+/// With [distinctFromPinKey], the new PIN is refused if it matches the PIN
+/// saved under that key, which [distinctFromPinName] names in the error.
 class SetPinDialogue extends StatefulWidget {
   const SetPinDialogue({
     super.key,
     required this.pinKey,
     required this.title,
     this.requireCurrentPin = false,
+    this.distinctFromPinKey,
+    this.distinctFromPinName = '',
   });
 
   final String pinKey;
   final String title;
   final bool requireCurrentPin;
+  final String? distinctFromPinKey;
+  final String distinctFromPinName;
 
   @override
   State<SetPinDialogue> createState() => _SetPinDialogueState();
@@ -79,6 +86,17 @@ class _SetPinDialogueState extends State<SetPinDialogue> {
       });
       return;
     }
+    // Only the hash of the other PIN is stored, so it has to be verified
+    final otherKey = widget.distinctFromPinKey;
+    if (otherKey != null && await PinService.verifyPin(otherKey, pin)) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _pinError =
+            'PIN must be different from\nthe ${widget.distinctFromPinName}';
+      });
+      return;
+    }
     await PinService.savePin(widget.pinKey, pin);
     if (!mounted) return;
     Navigator.pop(context, true);
@@ -106,7 +124,7 @@ class _SetPinDialogueState extends State<SetPinDialogue> {
         labelText: label,
         helperText: helperText,
         errorText: errorText,
-        // Hide the character counter so it doesn't show the PIN length
+        // Hide the character counter so it does not show the PIN length
         counterText: '',
       ),
     );

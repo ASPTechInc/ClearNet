@@ -80,7 +80,7 @@ class PinService {
     return _constantTimeEquals(actual, expected);
   }
 
-  /// Runs PBKDF2 in a background isolate so the UI doesn't freeze.
+  /// Runs PBKDF2 in a background isolate so the UI does not freeze.
   static Future<Uint8List> _hash(String pin, List<int> salt, int iterations) {
     final password = utf8.encode(pin);
     return Isolate.run(() => pbkdf2(password, salt, iterations));
@@ -100,7 +100,7 @@ class PinService {
     return result;
   }
 
-  /// Compares without returning early, so timing doesn't reveal how much of
+  /// Compares without returning early, so timing does not reveal how much of
   /// the value matched.
   static bool _constantTimeEquals(List<int> a, List<int> b) {
     if (a.length != b.length) return false;

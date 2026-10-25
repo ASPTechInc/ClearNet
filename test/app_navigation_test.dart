@@ -40,7 +40,7 @@ void main() {
       buildSignature: '',
     );
 
-    // Tours already seen, so they don't cover the screens under test
+    // Tours already seen, so they do not cover the screens under test
     final prefs = SharedPreferencesAsync();
     for (final key in [
       AppTourManager.protectionTourKey,
@@ -146,7 +146,7 @@ void main() {
       ),
       (_) {},
     );
-    // The screen shows a spinner until the app closes, so don't wait to settle
+    // The screen shows a spinner until the app closes, so do not wait to settle
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 

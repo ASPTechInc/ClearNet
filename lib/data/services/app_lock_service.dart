@@ -65,7 +65,7 @@ class AppLockService {
   static Future<void> setTimeoutSeconds(int seconds) =>
       SharedPreferencesAsync().setInt(Constants.appLockTimeoutKey, seconds);
 
-  /// How long to wait before closing after the user leaves ClearNet, or null
+  /// How long to wait before closing after the user leaves ClearNet or null
   /// if app lock is off.
   static Future<Duration?> delayAfterLeaving() async {
     // Read this first, before the awaits below can let the window pass

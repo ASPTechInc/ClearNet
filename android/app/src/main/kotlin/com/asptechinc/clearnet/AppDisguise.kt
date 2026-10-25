@@ -9,7 +9,7 @@ import android.content.pm.PackageManager
 
 /**
  * Switches ClearNet's launcher icon between its normal one and the disguises.
- * Each is an <activity-alias> of MainActivity in AndroidManifest.xml, and
+ * Each is an <activity-alias> of MainActivity in AndroidManifest.xml and
  * exactly one is turned on. MainActivity itself is never turned off, because
  * ClearNet opens it directly.
  */

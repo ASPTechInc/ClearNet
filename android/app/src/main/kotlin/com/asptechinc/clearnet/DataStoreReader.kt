@@ -11,7 +11,7 @@ import org.json.JSONArray
 
 /**
  * Reads the settings the Flutter app saves with SharedPreferencesAsync, so the
- * VPN and accessibility service can use them. Native code can't call the Flutter
+ * VPN and accessibility service can use them. Native code cannot call the Flutter
  * plugin, so this reads the DataStore file directly. Values are looked up by
  * their exact Dart key names (such as 'blocked_sites' and 'is_blocking_enabled'),
  * so those names are shared with this file.
@@ -90,7 +90,7 @@ object DataStoreReader {
         customDns = (prefs["custom_dns"] as? String)?.trim() ?: "",
     )
 
-    /** Reads a list saved by the plugin, or a string set. Anything else is empty. */
+    /** Reads a list saved by the plugin or a string set. Anything else is empty. */
     private fun readList(value: Any?): Set<String> {
         val items = when (value) {
             is String -> {

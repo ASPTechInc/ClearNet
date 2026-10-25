@@ -106,7 +106,7 @@ class _ProtectionScreenState extends State<ProtectionScreen>
     final monthlyApp = await StatsManager.getMonthlyAppsCount();
 
     final isEnabled = await _prefs.getBool('is_blocking_enabled') ?? false;
-    // The VPN doesn't survive a reboot or app update, so restart it if needed
+    // The VPN does not survive a reboot or app update, so restart it if needed
     if (isEnabled) unawaited(VpnController.startVpn());
 
     if (!mounted) return;

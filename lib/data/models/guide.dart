@@ -18,7 +18,7 @@ class GuideItem {
       case 'intro':
         type = GuideDataType.intro;
         break;
-      // guide.json uses "do"; the enum can't, as do is a Dart keyword
+      // guide.json uses "do"; the enum cannot, as do is a Dart keyword
       case 'do':
       case 'doPage':
         type = GuideDataType.doPage;

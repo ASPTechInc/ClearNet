@@ -7,6 +7,9 @@ import 'dart:math';
 // Flutter imports:
 import 'package:flutter/material.dart';
 
+// Project imports:
+import 'package:clearnet/shared/utilities/constants.dart';
+
 /// The challenge shown before blocking can be turned off: three long
 /// sentences of hard words that must be typed exactly. Any mistake starts it
 /// again with new sentences. Closes with true if passed, false if given up.
@@ -20,34 +23,6 @@ class DisableConfirmationDialogue extends StatefulWidget {
 
 class _DisableConfirmationDialogueState
     extends State<DisableConfirmationDialogue> {
-  static const List<String> _wordPool = [
-    'persistence',
-    'extraordinary',
-    'conundrum',
-    'labyrinth',
-    'ephemeral',
-    'melancholy',
-    'serendipity',
-    'quintessential',
-    'eloquence',
-    'nefarious',
-    'obfuscate',
-    'pragmatic',
-    'resilient',
-    'ubiquitous',
-    'vivacious',
-    'whimsical',
-    'zealous',
-    'aberration',
-    'benevolent',
-    'capricious',
-    'deference',
-    'enervate',
-    'garrulous',
-    'haughty',
-    'impetuous',
-  ];
-
   final Random _random = Random();
   final List<String> _sentences = [];
   final List<String> _userInputs = [];
@@ -72,13 +47,14 @@ class _DisableConfirmationDialogueState
     _sentences.clear();
     _userInputs.clear();
     _currentStep = 0;
+    // Each sentence takes the next words from one shuffle, so no word is
+    // shown twice. The pool needs at least 45 words (3 sentences of up to 15).
+    final words = List.of(Constants.wordPool)..shuffle(_random);
+    var next = 0;
     for (int i = 0; i < 3; i++) {
       final length = 12 + _random.nextInt(4);
-      final sentenceWords = <String>[];
-      for (int j = 0; j < length; j++) {
-        sentenceWords.add(_wordPool[_random.nextInt(_wordPool.length)]);
-      }
-      _sentences.add(sentenceWords.join(' '));
+      _sentences.add(words.sublist(next, next + length).join(' '));
+      next += length;
     }
   }
 
@@ -86,7 +62,7 @@ class _DisableConfirmationDialogueState
     final input = _inputController.text.trim();
     if (input.isEmpty) {
       // Shown in the dialogue, as a SnackBar would appear behind it
-      setState(() => _errorMessage = 'Type the sentence before continuing.');
+      setState(() => _errorMessage = 'Type the words before continuing.');
       return;
     }
 
@@ -179,7 +155,7 @@ class _DisableConfirmationDialogueState
               const SizedBox(height: 8),
 
               Text(
-                'Type the following sentence exactly as shown below '
+                'Type the following words exactly as shown below '
                 'to proceed:',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -214,7 +190,7 @@ class _DisableConfirmationDialogueState
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: colorScheme.outlineVariant),
                 ),
-                // Plain text, so the sentence can't be copied and pasted
+                // Plain text, so the sentence cannot be copied and pasted
                 child: Text(
                   _sentences[_currentStep],
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -231,7 +207,7 @@ class _DisableConfirmationDialogueState
                 minLines: 3,
                 maxLines: 5,
                 autofocus: true,
-                // No pasting, and no autocorrect changing the typed words
+                // No pasting and no autocorrect changing the typed words
                 enableInteractiveSelection: false,
                 autocorrect: false,
                 enableSuggestions: false,

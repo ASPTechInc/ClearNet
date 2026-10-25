@@ -83,7 +83,7 @@ void main() {
     await tester.scrollUntilVisible(
       target,
       200.0,
-      // The page itself; some tiles contain their own scrollable fields
+      // The page itself; some tiles contain their scrollable fields
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
@@ -190,7 +190,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining("can't be uninstalled without the PIN."),
+      find.textContaining('cannot be uninstalled without the PIN.'),
       findsOneWidget,
     );
   });

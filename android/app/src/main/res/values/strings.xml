@@ -5,7 +5,15 @@
     <!-- The next three strings are shown on the system screens that can remove
          ClearNet's protection. UninstallGuard looks for them to recognise those
          screens in any language, so keep each one unique. -->
-    <string name="accessibility_service_description">Lets ClearNet close blocked apps, check browser pages for blocked content, and stop its protection being turned off without the uninstall PIN.</string>
+    <string name="accessibility_service_description">Lets ClearNet close blocked apps, check browser pages for blocked content and stop its protection being turned off without the uninstall PIN.</string>
     <string name="device_admin_description">Stops ClearNet being removed without the uninstall PIN.</string>
     <string name="uninstall_dialog_message">Enter your uninstall protection PIN to proceed.</string>
+    <!-- Shown when asking to become a device admin. Not one of the markers
+         above, so the guard never treats the activation screen as protected. -->
+    <string name="device_admin_explanation">Activate this so the app can only be uninstalled with your uninstall PIN.</string>
+    <!-- The revoked notification does not name the app, so it does not give
+         away a disguised ClearNet -->
+    <string name="vpn_alert_channel_name">Alerts</string>
+    <string name="vpn_revoked_title">Connection setting changed</string>
+    <string name="vpn_revoked_text">Another VPN was turned on, so network filtering has stopped. Browser and app checks still work. Tap to turn it back on.</string>
 </resources>

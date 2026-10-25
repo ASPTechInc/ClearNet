@@ -35,9 +35,15 @@ object UninstallGuard {
     fun isEnabled(context: Context): Boolean {
         val enabled = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getBoolean(KEY_ENABLED, false)
-        if (!enabled) return false
+        return enabled && isAdminActive(context)
+    }
+
+    fun adminComponent(context: Context) = ComponentName(context, AdminReceiver::class.java)
+
+    /** True if the user has allowed ClearNet as a device admin. */
+    fun isAdminActive(context: Context): Boolean {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        return dpm.isAdminActive(ComponentName(context, AdminReceiver::class.java))
+        return dpm.isAdminActive(adminComponent(context))
     }
 
     /** Called after the uninstall PIN is entered correctly. */

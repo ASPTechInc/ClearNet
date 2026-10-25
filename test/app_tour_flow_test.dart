@@ -85,7 +85,7 @@ void main() {
 
   tearDown(() {
     AppNavigationService.controller.removeListener(recordTab);
-    // The showcase state is global: don't let a test that fails mid-tour
+    // The showcase state is global: do not let a test that fails mid-tour
     // leave a tour running for the next one.
     final showcase = ShowcaseView.get();
     if (showcase.isShowcaseRunning) showcase.dismiss();
@@ -94,7 +94,7 @@ void main() {
   double contentTabAnimation(WidgetTester tester) =>
       tester.widget<TabBar>(find.byType(TabBar)).controller!.animation!.value;
 
-  /// Title of the step currently spotlighted, or null if no tour is running.
+  /// Title of the step currently spotlighted or null if no tour is running.
   String? activeStep(WidgetTester tester) {
     final key = ShowcaseView.get().getActiveShowcaseKey;
     if (key == null) return null;
@@ -126,7 +126,7 @@ void main() {
   }
 
   /// Pumps frames for [duration], running [checkFrame] on each one.
-  /// pumpAndSettle can't be used: the tooltip's bounce animation repeats
+  /// pumpAndSettle cannot be used: the tooltip's bounce animation repeats
   /// forever, so it would never settle.
   Future<void> pumpFrames(WidgetTester tester, Duration duration) async {
     const frame = Duration(milliseconds: 50);
@@ -156,7 +156,7 @@ void main() {
       tester.widget<TabBar>(find.byType(TabBar)).controller!.index;
 
   /// Walks [steps] on [tab], checking each step is shown on the right tab and
-  /// labelled 'Next', or 'Finish' when [endsTour] and it is the last one.
+  /// labelled 'Next' or 'Finish' when [endsTour] and it is the last one.
   Future<void> walkTour(
     WidgetTester tester, {
     required int tab,
@@ -298,7 +298,7 @@ void main() {
       await tester.pumpWidget(const ClearNetApp());
       await settle(tester);
 
-      // Visit every tab first so their screens are already built and won't
+      // Visit every tab first so their screens are already built and wo not
       // re-check the tour from initState.
       await tester.tap(find.text('Content'));
       await settle(tester);

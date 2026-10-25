@@ -15,7 +15,7 @@ import 'package:clearnet/presentation/screens/pin_pad_screen.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
 
 /// Shown when someone tries to remove ClearNet's protection, such as its device
-/// admin access. Asks for the uninstall PIN, or closes straight away if none
+/// admin access. Asks for the uninstall PIN or closes straight away if none
 /// has been set. A correct PIN allows the protected system screens for a short
 /// time, then closing returns the user to where they were.
 class UninstallPinScreen extends StatefulWidget {

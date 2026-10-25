@@ -114,7 +114,7 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
 
   void _navigateToBlocked() {
     // Keep the main screen underneath, so leaving the blocked page returns to
-    // the app. Earlier blocked pages are removed so they don't stack up.
+    // the app. Earlier blocked pages are removed so they do not stack up.
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       AppRoutes.blocked,
       (route) => route.isFirst,
@@ -135,6 +135,11 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
         await VpnController.isIgnoringBatteryOptimisations();
     if (!isBatteryOptimised) {
       final bool granted = await _showBatteryOptimisationDialog();
+      if (!granted) return;
+    }
+
+    if (await UninstallProtectionController.needsDeviceAdmin()) {
+      final bool granted = await _showDeviceAdminDialogue();
       if (!granted) return;
     }
 
@@ -210,6 +215,37 @@ class _ClearNetAppState extends State<ClearNetApp> with WidgetsBindingObserver {
         notEnabledMessage:
             'Battery optimisation is still active for ${Constants.appName}. '
             'Please allow ignoring battery optimisation.',
+      ),
+    );
+    _isDialogueShowing = false;
+    return result ?? false;
+  }
+
+  /// Shown when an uninstall PIN is set but device admin is off, which
+  /// happens if it was never allowed or was turned off in Android's settings.
+  Future<bool> _showDeviceAdminDialogue() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return false;
+
+    _isDialogueShowing = true;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PermissionRequirementDialogue(
+        title: 'Uninstall protection is off',
+        description:
+            'Your uninstall PIN is set, but ${Constants.appName} can still '
+            'be uninstalled without it until it is allowed as a device '
+            'admin app.',
+        initialButtonText: 'Turn on',
+        clickedButtonText: 'Confirm turning on',
+        exitButtonText: 'Exit app',
+        onActionPressed: UninstallProtectionController.requestDeviceAdmin,
+        onCheckPermission: UninstallProtectionController.isDeviceAdminActive,
+        onExitPressed: () => SystemNavigator.pop(),
+        notEnabledMessage:
+            'Device admin is not on yet. Tap "Activate" on the screen that '
+            'opens.',
       ),
     );
     _isDialogueShowing = false;

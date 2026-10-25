@@ -137,7 +137,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   }
 
   /// While blocking is on, only changes that make blocking stricter are
-  /// allowed. Returns true, and tells the user why, if [action] has to wait
+  /// allowed. Returns true and tells the user why, if [action] has to wait
   /// until blocking is turned off.
   Future<bool> _isLockedFor(String action) async {
     await _refreshBlockingState();
@@ -481,7 +481,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     try {
       AppLockService.expectExternalActivity();
       // Android has no MIME type for .backup, so the picker shows all files.
-      // Don't add 'json' here: the picker would then show only .json files.
+      // Do not add 'json' here: the picker would then show only .json files.
       // Older .json exports can still be picked.
       final result = await FilePicker.pickFile(
         type: FileType.custom,
@@ -692,7 +692,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Domains added are merged with the built-in block list.',
+            'Domains added are merged with the built-in blocklist.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),

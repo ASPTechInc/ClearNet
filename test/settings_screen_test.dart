@@ -31,7 +31,7 @@ void main() {
   final inMemoryStore = InMemorySharedPreferencesAsync.empty();
   SharedPreferencesAsyncPlatform.instance = inMemoryStore;
 
-  /// The About section starts collapsed, so its tiles aren't built until it
+  /// The About section starts collapsed, so its tiles are not built until it
   /// is expanded.
   Future<void> expandAboutSection(WidgetTester tester) async {
     final about = find.text('About');
@@ -127,10 +127,76 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        // The mock channel reports device admin as off, so the PIN does not
+        // protect anything yet
         expect(uninstallPinFinder, findsOneWidget);
+        expect(find.textContaining('Not active'), findsOneWidget);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel(Constants.methodChannelName),
+              (MethodCall methodCall) async =>
+                  methodCall.method == 'isDeviceAdminActive' ? true : null,
+            );
+        await tester.pumpWidget(
+          const MaterialApp(home: SettingsScreen(key: Key('with_admin'))),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          uninstallPinFinder,
+          200.0,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
         expect(find.text('PIN is set and permanent'), findsOneWidget);
       },
     );
+
+    testWidgets('Setting the uninstall PIN asks for device admin', (
+      WidgetTester tester,
+    ) async {
+      final calls = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel(Constants.methodChannelName),
+            (MethodCall methodCall) async {
+              calls.add(methodCall.method);
+              return null;
+            },
+          );
+      await tester.pumpWidget(
+        const MaterialApp(home: SettingsScreen(key: Key('admin_request'))),
+      );
+      await tester.pumpAndSettle();
+      final tile = find.widgetWithText(ListTile, 'Uninstall PIN');
+      await tester.scrollUntilVisible(
+        tile,
+        200.0,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Proceed'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('set_pin_field')),
+        '987654321',
+      );
+      await tester.enterText(
+        find.byKey(const Key('confirm_pin_field')),
+        '987654321',
+      );
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Save'));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      });
+      await tester.pumpAndSettle();
+
+      expect(calls, contains('requestDeviceAdmin'));
+    });
 
     testWidgets('Theme selection option is present', (
       WidgetTester tester,
@@ -346,7 +412,7 @@ void main() {
         find.byKey(const Key('confirm_pin_field')),
         '123456789',
       );
-      // Hashing runs in a real isolate, which the fake clock doesn't wait for
+      // Hashing runs in a real isolate, which the fake clock does not wait for
       await tester.runAsync(() async {
         await tester.tap(find.text('Save'));
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -368,7 +434,7 @@ void main() {
     Future<void> saveInDialog(WidgetTester tester, String pin) async {
       await tester.enterText(find.byKey(const Key('set_pin_field')), pin);
       await tester.enterText(find.byKey(const Key('confirm_pin_field')), pin);
-      // Hashing runs in a real isolate, which the fake clock doesn't wait for
+      // Hashing runs in a real isolate, which the fake clock does not wait for
       await tester.runAsync(() async {
         await tester.tap(find.text('Save'));
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -476,6 +542,54 @@ void main() {
       expect(
         await tester.runAsync(
           () => PinService.verifyPin(Constants.uninstallPinKey, '987654321'),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('Uninstall PIN cannot be the same as the app PIN', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Uninstall PIN');
+      await tester.tap(find.text('Proceed'));
+      await tester.pumpAndSettle();
+
+      await saveInDialog(tester, '123456789');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        find.text('PIN must be different from\nthe app PIN'),
+        findsOneWidget,
+      );
+      expect(await PinService.hasPin(Constants.uninstallPinKey), isFalse);
+    });
+
+    testWidgets('Change app PIN rejects a new PIN equal to the uninstall PIN', (
+      WidgetTester tester,
+    ) async {
+      await seedLocks(tester, appLock: true);
+      await tester.runAsync(
+        () => PinService.savePin(Constants.uninstallPinKey, '987654321'),
+      );
+      await showSecurity(tester, title: 'Set app PIN');
+      await tapTile(tester, 'Change app PIN');
+
+      await tester.enterText(
+        find.byKey(const Key('current_pin_field')),
+        '123456789',
+      );
+      await saveInDialog(tester, '987654321');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        find.text('PIN must be different from\nthe uninstall PIN'),
+        findsOneWidget,
+      );
+      expect(
+        await tester.runAsync(
+          () => PinService.verifyPin(Constants.appPinKey, '123456789'),
         ),
         isTrue,
       );

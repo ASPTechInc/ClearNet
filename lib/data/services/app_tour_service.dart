@@ -163,7 +163,7 @@ class AppTourManager {
   /// Wraps any given [child] widget with a [Showcase] spotlight.
   /// Falls back to rendering [child] directly when ShowcaseView is not
   /// registered
-  /// (e.g. in unit/widget tests that don't set up the showcase).
+  /// (e.g. in unit/widget tests that do not set up the showcase).
   ///
   /// Set [enableAutoScroll] for targets inside a vertically scrolling list
   /// that may be off-screen. Leave it off for targets inside horizontally
@@ -262,7 +262,7 @@ class AppTourManager {
   }
 
   /// Starts the showcase walkthrough if:
-  /// 1. The user hasn't completed/seen the tour yet (checked via [tourKey]).
+  /// 1. The user has not completed/seen the tour yet (checked via [tourKey]).
   /// 2. The global app-tour flag has not been set (prevents re-showing after
   ///    a one-time global dismissal, e.g. during onboarding).
   /// 3. Safe browsing or Accessibility service is enabled.
