@@ -12,6 +12,7 @@
 - [Flutter plugin error notes](#flutter-plugin-error-notes)
 - [F-Droid release notes](#f-droid-release-notes)
 - [Update or regenerate gradle-daemon-jvm properties](#update-or-regenerate-gradle-daemon-jvm-properties)
+- [Rewriting commit history](#rewriting-commit-history)
 
 ---
 
@@ -416,6 +417,33 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
 
 ```bash
 ./gradlew updateDaemonJvm --jvm-version 17
+```
+
+---
+
+## Rewriting commit history
+
+```bash
+# Install git-filter-repo
+python -m venv .venv
+source .venv/bin/activate
+pip install git-filter-repo
+
+# Rewrite commit history
+# GitHub name: ASPTechnologies Incorporation
+# GitHub email: 318654411+ASPTechInc@users.noreply.github.com
+cat > /tmp/mailmap <<'EOF'
+ASPTechnologies Incorporation <318654411+ASPTechInc@users.noreply.github.com> <commit-hash+<other-github-username>@users.noreply.github.com>
+EOF
+git filter-repo --mailmap /tmp/mailmap --force
+git remote add origin https://github.com/ASPTechInc/ClearNet.git   # filter-repo removes the remote
+
+
+# Check it then, force-push:
+git log --format='%an <%ae>' | sort | uniq -c
+git fetch origin
+git push --force-with-lease origin main
+git stash pop
 ```
 
 ---
