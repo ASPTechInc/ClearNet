@@ -443,6 +443,7 @@ git remote add origin https://github.com/ASPTechInc/ClearNet.git   # filter-repo
 git log --format='%an <%ae>' | sort | uniq -c
 git fetch origin
 git push --force-with-lease origin main
+git push --set-upstream origin main
 git stash pop
 ```
 
