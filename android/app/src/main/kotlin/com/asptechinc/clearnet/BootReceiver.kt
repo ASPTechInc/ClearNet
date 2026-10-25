@@ -12,7 +12,7 @@ import android.util.Log
 /**
  * Starts the VPN again after the device restarts or ClearNet is updated, both
  * of which stop it. It only starts if blocking is on and the VPN permission
- * was already given, because the permission screen can't be shown from here.
+ * was already given, because the permission screen cannot be shown from here.
  */
 class BootReceiver : BroadcastReceiver() {
 

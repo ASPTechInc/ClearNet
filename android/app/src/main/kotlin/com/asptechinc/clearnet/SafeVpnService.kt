@@ -3,13 +3,18 @@
 
 package com.asptechinc.clearnet
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.Os
 import android.system.OsConstants
 import android.system.StructPollfd
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
@@ -26,7 +31,7 @@ import kotlin.concurrent.thread
  *
  * The VPN gives the device a virtual DNS server, so every DNS query arrives on
  * the VPN interface. Queries for blocked domains get NXDOMAIN, Google, Bing and
- * YouTube get their SafeSearch addresses, and everything else is forwarded to
+ * YouTube get their SafeSearch addresses and everything else is forwarded to
  * the upstream DNS server over a socket that bypasses the VPN.
  *
  * Plain DNS sent straight to well-known public resolvers is filtered the same
@@ -57,14 +62,17 @@ class SafeVpnService : VpnService(), Runnable {
         var instance: SafeVpnService? = null
 
         // Private addresses unlikely to clash with a home or mobile network.
-        // VIRTUAL_DNS isn't a real server: it's the DNS address the VPN gives
-        // the device, and the reader thread answers everything sent to it.
+        // VIRTUAL_DNS is not a real server: it's the DNS address the VPN gives
+        // the device and the reader thread answers everything sent to it.
         private const val VPN_ADDRESS = "10.111.222.1"
         private const val VIRTUAL_DNS = "10.111.222.2"
         // Android only allows IPv6 routes on a VPN that has an IPv6 address.
         // It's needed so the IPv6 public resolver routes below can be added.
         private const val VPN_ADDRESS_V6 = "fd00:111:222::1"
         private const val UPSTREAM_TIMEOUT_MS = 4000
+
+        private const val ALERT_CHANNEL_ID = "vpn_alerts"
+        private const val REVOKED_NOTIFICATION_ID = 1001
 
         // Must accept plain DNS on port 53. Mullvad's public DNS only accepts DoH/DoT.
         private val DEFAULT_UPSTREAMS = listOf(
@@ -141,7 +149,7 @@ class SafeVpnService : VpnService(), Runnable {
 
     /**
      * Loads the lists and upstream servers, then builds the VPN interface and
-     * starts the packet thread if they aren't running yet.
+     * starts the packet thread if they are not running yet.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val data = DataStoreReader.readData(this)
@@ -175,12 +183,17 @@ class SafeVpnService : VpnService(), Runnable {
 
             vpnInterface = builder.establish()
             output = vpnInterface?.let { FileOutputStream(it.fileDescriptor) }
+            // Filtering is back on, so an earlier "VPN revoked" notice no longer applies
+            if (vpnInterface != null) {
+                (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                    .cancel(REVOKED_NOTIFICATION_ID)
+            }
         }
 
         if (readerThread == null && vpnInterface != null) {
             running = true
             // Forwarded lookups wait on the network (up to 4 s per server), so
-            // they run on their own threads and don't hold up the reader
+            // they run on their threads and do not hold up the reader
             forwarders = Executors.newFixedThreadPool(8)
             readerThread = thread(start = true, name = "ClearNetVpnReader") { run() }
         }
@@ -194,7 +207,53 @@ class SafeVpnService : VpnService(), Runnable {
     }
 
     /**
-     * Closes the VPN interface. stopService() alone doesn't do this, because the
+     * Called when the system takes the VPN away, usually because another VPN
+     * app was started (Android only runs one VPN at a time). DNS filtering
+     * stops, so the user is told rather than left thinking they're protected.
+     */
+    override fun onRevoke() {
+        Log.w(TAG, "VPN revoked by the system; DNS filtering has stopped")
+        showRevokedNotice()
+        stopVpn()
+    }
+
+    private fun showRevokedNotice() {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    ALERT_CHANNEL_ID,
+                    getString(R.string.vpn_alert_channel_name),
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+            )
+        }
+        val openApp = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val text = getString(R.string.vpn_revoked_text)
+        val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_sys_warning)
+            .setContentTitle(getString(R.string.vpn_revoked_title))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(openApp)
+            .setAutoCancel(true)
+            .build()
+        try {
+            manager.notify(REVOKED_NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            // Notification permission not granted (Android 13+)
+            Log.w(TAG, "Could not show the VPN revoked notification", e)
+        }
+    }
+
+    /**
+     * Closes the VPN interface. stopService() alone does not do this, because the
      * system stays bound to a VPN service while its interface is open.
      */
     private fun stopVpn() {
@@ -289,7 +348,7 @@ class SafeVpnService : VpnService(), Runnable {
         val safeIp = DnsPacket.safeSearchIp(domain)
         if (safeIp != null) {
             // A records get the SafeSearch address. Other types (AAAA, HTTPS)
-            // get an empty answer so they can't route around SafeSearch.
+            // get an empty answer so they cannot route around SafeSearch.
             val answer = if (question.type == DnsPacket.TYPE_A) safeIp else null
             reply(packet, udp, DnsPacket.buildResponse(query, question, DnsPacket.RCODE_NOERROR, answer))
             return

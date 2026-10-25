@@ -59,6 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _lockSettingsEnabled = false;
   bool _isAppPinSet = false;
   bool _isUninstallPinSet = false;
+  bool _isDeviceAdminActive = false;
   String _currentDisguise = 'none';
   final _dnsController = TextEditingController();
   String _selectedDnsPresetId = 'default';
@@ -98,6 +99,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkAndStartAppTour();
+      // Device admin may have been turned on or off in Android's settings
+      unawaited(_loadSettings());
     }
   }
 
@@ -146,6 +149,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         await _prefs.getBool(Constants.lockSettingsKey) ?? false;
     final disguise = await _prefs.getString(Constants.appDisguiseKey) ?? 'none';
     final lockTimeout = await AppLockService.getTimeoutSeconds();
+    final isAdminActive =
+        await UninstallProtectionController.isDeviceAdminActive();
     _dnsController.text = customDns;
     _updateSelectedDnsPresetId(customDns);
     if (!mounted) return;
@@ -153,6 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       _appLockEnabled = appLock == 'true';
       _isAppPinSet = appPin != null && appPin.isNotEmpty;
       _isUninstallPinSet = uninstallPin != null && uninstallPin.isNotEmpty;
+      _isDeviceAdminActive = isAdminActive;
       _lockSettingsEnabled = lockSettings;
       _currentDisguise = disguise;
       _appLockTimeoutSeconds = lockTimeout;
@@ -301,6 +307,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           builder: (_) => const SetPinDialogue(
             pinKey: Constants.appPinKey,
             title: 'Set App PIN',
+            distinctFromPinKey: Constants.uninstallPinKey,
+            distinctFromPinName: 'uninstall PIN',
           ),
         );
         if (saved == true) {
@@ -335,6 +343,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         pinKey: Constants.appPinKey,
         title: 'Change App PIN',
         requireCurrentPin: true,
+        distinctFromPinKey: Constants.uninstallPinKey,
+        distinctFromPinName: 'uninstall PIN',
       ),
     );
     if (saved == true && mounted) {
@@ -379,6 +389,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (_) => const SetPinDialogue(
         pinKey: Constants.uninstallPinKey,
         title: 'Set Uninstall PIN',
+        distinctFromPinKey: Constants.appPinKey,
+        distinctFromPinName: 'app PIN',
       ),
     );
     if (saved == true) {
@@ -388,6 +400,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SnackBar(content: Text('Uninstall PIN set successfully')),
         );
       }
+      // The PIN only protects anything once ClearNet is a device admin
+      await UninstallProtectionController.requestDeviceAdmin();
     }
     _loadSettings();
   }
@@ -1027,7 +1041,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           SwitchListTile(
             title: const Text('Lock settings with PIN'),
             subtitle: const Text(
-              'Requires app PIN to access this (Settings) screen',
+              'Requires app PIN to access this (Settings) screen and the '
+              'Content screen',
             ),
             value: _lockSettingsEnabled,
             onChanged: _toggleLockSettings,
@@ -1039,27 +1054,43 @@ class _SettingsScreenState extends State<SettingsScreen>
             title: 'Uninstall protection',
             description:
                 'Set a permanent PIN to prevent unauthorised app removal.',
-            child: ListTile(
-              title: const Text('Uninstall PIN'),
-              subtitle: Text(
-                _isUninstallPinSet
-                    ? 'PIN is set and permanent'
-                    : 'Set a PIN to prevent unauthorised uninstallation '
-                          'of the application',
-              ),
-              trailing: _isUninstallPinSet
-                  ? const Icon(Icons.lock, color: Colors.green)
-                  : null,
-              onTap: _isUninstallPinSet ? null : _setupUninstallPin,
-              enabled: !_isUninstallPinSet,
-            ),
+            child: !_isUninstallPinSet
+                ? ListTile(
+                    title: const Text('Uninstall PIN'),
+                    subtitle: const Text(
+                      'Set a PIN to prevent unauthorised uninstallation '
+                      'of the application',
+                    ),
+                    onTap: _setupUninstallPin,
+                  )
+                : _isDeviceAdminActive
+                ? const ListTile(
+                    title: Text('Uninstall PIN'),
+                    subtitle: Text('PIN is set and permanent'),
+                    trailing: Icon(Icons.lock, color: Colors.green),
+                    enabled: false,
+                  )
+                // A PIN without device admin does not stop uninstalling
+                : const ListTile(
+                    title: Text('Uninstall PIN'),
+                    subtitle: Text(
+                      'Not active: device admin is off, so the app can be '
+                      'uninstalled. Tap to turn it on.',
+                    ),
+                    trailing: Icon(Icons.warning_amber, color: Colors.orange),
+                    onTap: UninstallProtectionController.requestDeviceAdmin,
+                  ),
           ),
           if (!_isUninstallPinSet)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 'Warning: Once set, it CANNOT be changed or reset.',
-                style: TextStyle(color: Colors.orange, fontSize: 12),
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
           // Disguise mode
@@ -1185,7 +1216,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           // Clear content
           ListTile(
             title: const Text('Clear content'),
-            subtitle: const Text('Remove all block list rules'),
+            subtitle: const Text('Remove all blocklist rules'),
             onTap: () => _showClearContentDialogue(),
           ),
           // Reset content

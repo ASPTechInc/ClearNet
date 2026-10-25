@@ -42,7 +42,7 @@ internal object DnsPacket {
     /** The first question in a query. [end] is the offset just after it. */
     class Question(val name: String, val type: Int, val end: Int)
 
-    /** The SafeSearch address for [domain], or null if it isn't a search site. */
+    /** The SafeSearch address for [domain] or null if it is not a search site. */
     fun safeSearchIp(domain: String): ByteArray? = when {
         GOOGLE_SEARCH.matches(domain) -> SAFE_SEARCH_GOOGLE
         domain in YOUTUBE_HOSTS -> SAFE_SEARCH_GOOGLE
@@ -117,7 +117,7 @@ internal object DnsPacket {
         packet[0] = 0x45
         packet[2] = (totalLength shr 8).toByte()
         packet[3] = (totalLength and 0xFF).toByte()
-        packet[6] = 0x40 // Don't fragment
+        packet[6] = 0x40 // Do not fragment
         packet[8] = 64 // TTL
         packet[9] = 17 // UDP
         System.arraycopy(request, 16, packet, 12, 4) // Source = original destination

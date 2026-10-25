@@ -27,7 +27,7 @@ Future<void> typePin(WidgetTester tester, String pin) async {
 }
 
 /// Taps the tick and waits for PIN hashing, which runs in a real isolate that
-/// the test's fake clock doesn't wait for.
+/// the test's fake clock does not wait for.
 Future<void> submit(WidgetTester tester) async {
   await tester.runAsync(() async {
     await tester.tap(find.byKey(const Key('pin_key_enter')));

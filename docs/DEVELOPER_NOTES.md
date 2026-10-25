@@ -190,19 +190,19 @@ containers.
 
 ### Add your user to the docker group
 
-  ```bash
-  # Add your user to the docker group
-  sudo usermod -aG docker $USER
-  
-  # Install 'newgrp' command
-  sudo apt install util-linux-extra
-  
-  # Apply the group changes
-  newgrp docker
-  
-  # Verify the fix
-  docker ps
-  ````
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Install 'newgrp' command
+sudo apt install util-linux-extra
+
+# Apply the group changes
+newgrp docker
+
+# Verify the fix
+docker ps
+```
 
 > If changes do not take effect, log out and log back in
 
@@ -236,6 +236,7 @@ GITHUB_TOKEN=<github-personal-access-token>
    act -l
    ```
 2. **Test Continuous Integration (CI) pipeline (`ci.yml`):**
+
    ```bash
    act -j build -W .github/workflows/ci.yml
 
@@ -245,7 +246,9 @@ GITHUB_TOKEN=<github-personal-access-token>
    act -j instrumentation-test -W .github/workflows/ci.yml
    act -j lint -W .github/workflows/ci.yml
    ```
+
 3. **Test release production pipeline (`release.yml`):**
+
    ```bash
    act -j build -W .github/workflows/release.yml
 
@@ -313,7 +316,7 @@ git commit -m "Stop tracking build/ directory"
    ```
 
 > Ensure you are within your active Python virtual environment .venv where pre-commit is installed
-> if you haven't installed it globally.
+> if you have not installed it globally.
 
 ---
 
@@ -348,7 +351,7 @@ configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 to
 
 ```bash
-configureAbiWithoutSplits(projectToAddTasksTo, androidExtension)
+configureAbiWithoutSplits(projectToAddTasksTo androidExtension)
 ```
 
 Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK folder might notice this local modification. If it complains about a conflict, you can safely reset or discard changes in that directory before upgrading (git checkout -- packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt), since the upstream Flutter developers will have officially fixed the typo in the newer version anyway.
@@ -396,13 +399,14 @@ Flutter Upgrades: When you run flutter upgrade, Git inside your Flutter SDK fold
    ```
 
 6. Build release version of app for F-Droid distribution:
+
    ```bash
    fdroid build com.asptechinc.clearnet
 
    flutter build apk --release --dart-define=FDROID_BUILD=true
    ```
 
-6. **Open a merge request:**
+7. **Open a merge request:**
    - Navigate to the fork on GitLab and click **Create Merge Request**.
    - Select `RFP` (Request for Packaging) or standard new app template. The F-Droid maintainers and automated CI bots will test building the application and reply directly to the merge request.
 

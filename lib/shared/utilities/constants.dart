@@ -36,6 +36,7 @@ class Constants {
   static const String appPinKey = 'app_pin';
   static const String appLockTimeoutKey = 'app_lock_timeout_seconds';
   static const String uninstallPinKey = 'uninstall_pin';
+  static const String appPinResetRequestedKey = 'app_pin_reset_requested_at';
   static const String appDisguiseKey = 'app_disguise';
 
   static const String githubRepoUrl = 'https://github.com/asptechinc/clearnet';
@@ -74,5 +75,58 @@ class Constants {
     DnsPreset(id: '1.1.1.1', label: 'Cloudflare (1.1.1.1)', ip: '1.1.1.1'),
     DnsPreset(id: '8.8.8.8', label: 'Google DNS (8.8.8.8)', ip: '8.8.8.8'),
     DnsPreset(id: 'custom', label: 'Custom IP Address', ip: ''),
+  ];
+
+  static const List<String> wordPool = [
+    'persistence',
+    'extraordinary',
+    'conundrum',
+    'labyrinth',
+    'ephemeral',
+    'melancholy',
+    'serendipity',
+    'quintessential',
+    'eloquence',
+    'nefarious',
+    'obfuscate',
+    'pragmatic',
+    'resilient',
+    'ubiquitous',
+    'vivacious',
+    'whimsical',
+    'zealous',
+    'aberration',
+    'benevolent',
+    'capricious',
+    'deference',
+    'enervate',
+    'garrulous',
+    'haughty',
+    'impetuous',
+    'idiosyncratic',
+    'juxtaposition',
+    'kaleidoscope',
+    'loquacious',
+    'magnanimous',
+    'nonchalant',
+    'obsequious',
+    'perspicacious',
+    'querulous',
+    'recalcitrant',
+    'sycophant',
+    'tenacious',
+    'unequivocal',
+    'vicissitude',
+    'acquiesce',
+    'belligerent',
+    'cacophony',
+    'dichotomy',
+    'egregious',
+    'fastidious',
+    'gregarious',
+    'hierarchy',
+    'incongruous',
+    'jubilant',
+    'mnemonic',
   ];
 }

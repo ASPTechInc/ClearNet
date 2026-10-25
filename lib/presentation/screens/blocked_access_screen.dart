@@ -63,9 +63,9 @@ class BlockedAccessScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  '${Constants.appName} has restricted access to this content '
-                  'because it matches your prohibited domains or keywords '
-                  'rules. Please return to a safe browsing page.',
+                  '${Constants.appName} has restricted access to this page '
+                  'because it matches prohibited content.\n'
+                  'Please return to a safe browsing page.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

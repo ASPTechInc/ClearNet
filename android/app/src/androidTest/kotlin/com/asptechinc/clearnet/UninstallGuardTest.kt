@@ -46,7 +46,7 @@ class UninstallGuardTest {
     @Test
     fun needsBothAPinAndActiveDeviceAdmin() {
         UninstallGuard.setEnabled(context, true)
-        // Device admin can't be turned on from a test, so this follows its state
+        // Device admin cannot be turned on from a test, so this follows its state
         assertEquals(isDeviceAdmin, UninstallGuard.isEnabled(context))
     }
 
@@ -58,7 +58,7 @@ class UninstallGuardTest {
 
         assertTrue(UninstallGuard.isAllowed())
         UninstallGuard.setEnabled(context, true)
-        assertFalse("allowed screens aren't protected", UninstallGuard.shouldProtect(context))
+        assertFalse("allowed screens are not protected", UninstallGuard.shouldProtect(context))
     }
 
     @Test
@@ -81,7 +81,7 @@ class UninstallGuardTest {
 
     @Test
     fun adminReceiverShowsTheRecognisedMessage() {
-        val message = AdminReceiver().onDisableRequested(context, android.content.Intent())
+        val message = AdminReceiver().onDisableRequested(context android.content.Intent())
         assertEquals(context.getString(R.string.uninstall_dialog_message), message.toString())
     }
 }

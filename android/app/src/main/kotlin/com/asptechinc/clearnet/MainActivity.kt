@@ -3,8 +3,11 @@
 
 package com.asptechinc.clearnet
 
+import android.Manifest
 import android.content.Intent
 import android.app.Activity
+import android.app.admin.DevicePolicyManager
+import android.os.Build
 import android.net.VpnService
 import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
@@ -33,6 +36,7 @@ class MainActivity : FlutterActivity() {
     // Set when an intent arrives before Flutter is ready, until Flutter asks
     private var pendingAction: String? = null
     private val VPN_PERMISSION_REQUEST_CODE = 1002
+    private val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -40,13 +44,14 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startVpn" -> {
-                    // Ask for VPN permission first if it hasn't been granted. The
+                    // Ask for VPN permission first if it has not been granted. The
                     // VPN then starts in onActivityResult once it's allowed.
                     val intent = VpnService.prepare(this)
                     if (intent != null) {
                         startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
                     } else {
                         startService(Intent(this, SafeVpnService::class.java))
+                        requestNotificationPermission()
                     }
                     result.success(true)
                 }
@@ -145,6 +150,18 @@ class MainActivity : FlutterActivity() {
                     UninstallGuard.setEnabled(this, call.argument<Boolean>("enabled") ?: false)
                     result.success(true)
                 }
+                "isDeviceAdminActive" -> {
+                    result.success(UninstallGuard.isAdminActive(this))
+                }
+                "requestDeviceAdmin" -> {
+                    // Android wo not uninstall an active device admin, so
+                    // uninstall protection only works once this is allowed
+                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                        .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, UninstallGuard.adminComponent(this))
+                        .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.device_admin_explanation))
+                    startActivity(intent)
+                    result.success(true)
+                }
                 "allowProtectedScreens" -> {
                     UninstallGuard.allowProtectedScreens()
                     result.success(true)
@@ -207,6 +224,19 @@ class MainActivity : FlutterActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == VPN_PERMISSION_REQUEST_CODE && resultCode == RESULT_OK) {
             startService(Intent(this, SafeVpnService::class.java))
+            requestNotificationPermission()
+        }
+    }
+
+    /**
+     * Android 13+ needs permission for the warning shown when another VPN
+     * turns off filtering. Asked after the VPN dialogue so the two do not overlap.
+     */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST_CODE)
         }
     }
 
@@ -222,7 +252,7 @@ class MainActivity : FlutterActivity() {
         flutterEngine?.dartExecutor?.binaryMessenger?.let {
             MethodChannel(it, CHANNEL).invokeMethod(method, null)
         } ?: run {
-            // Flutter isn't ready yet, so remember this until it asks
+            // Flutter is not ready yet, so remember this until it asks
             pendingAction = action
         }
     }

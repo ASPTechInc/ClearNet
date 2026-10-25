@@ -7,8 +7,8 @@ package com.asptechinc.clearnet
  * The blocking rules shared by the VPN and the accessibility service.
  *
  * A blocked or whitelisted site matches that domain and its subdomains only,
- * so "x.com" covers "www.x.com" but not "box.com", and whitelisting
- * "google.com" doesn't allow "notgoogle.com". Keywords match anywhere.
+ * so "x.com" covers "www.x.com" but not "box.com" and whitelisting
+ * "google.com" does not allow "notgoogle.com". Keywords match anywhere.
  */
 internal object DomainRules {
     // Domain names inside on-screen text, such as an address bar

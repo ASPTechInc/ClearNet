@@ -64,6 +64,20 @@ void main() {
     expect(words.length, inInclusiveRange(12, 15));
   });
 
+  testWidgets('no word appears twice across the three sentences', (
+    WidgetTester tester,
+  ) async {
+    await openDialogue(tester);
+
+    final words = <String>[];
+    for (var step = 1; step <= 3; step++) {
+      final sentence = shownSentence(tester);
+      words.addAll(sentence.split(' '));
+      if (step < 3) await typeAndContinue(tester, sentence);
+    }
+    expect(words.toSet().length, words.length, reason: words.join(' '));
+  });
+
   testWidgets('typing all three sentences exactly closes it with true', (
     WidgetTester tester,
   ) async {
@@ -101,7 +115,7 @@ void main() {
 
     await typeAndContinue(tester, '   ');
 
-    expect(find.text('Type the sentence before continuing.'), findsOneWidget);
+    expect(find.text('Type the words before continuing.'), findsOneWidget);
     expect(find.text('Step 1 of 3'), findsOneWidget);
   });
 

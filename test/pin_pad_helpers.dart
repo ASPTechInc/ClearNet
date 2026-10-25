@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Types [pin] on the number pad and taps the tick, then waits for PIN
-/// hashing, which runs in a real isolate that the test's fake clock doesn't
+/// hashing, which runs in a real isolate that the test's fake clock does not
 /// wait for.
 Future<void> enterPinOnPad(WidgetTester tester, String pin) async {
   for (final digit in pin.split('')) {

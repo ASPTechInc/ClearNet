@@ -71,8 +71,8 @@ class _PermissionRequirementDialogueState
     }
   }
 
-  // Android doesn't notify the app when the user changes these settings, so
-  // check regularly instead, and stop after 3 minutes
+  // Android does not notify the app when the user changes these settings, so
+  // check regularly instead and stop after 3 minutes
   void _startPollingTimer() {
     _stopPollingTimer();
     _pollingStartTime = DateTime.now();

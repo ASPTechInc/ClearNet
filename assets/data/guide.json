@@ -28,32 +28,32 @@
         },
         {
             "type": "dont",
-            "title": "Don't disable VPN protection",
+            "title": "Do not disable VPN protection",
             "description": "Turning off local VPN leaves your device exposed to adult content and triggers."
         },
         {
             "type": "dont",
-            "title": "Don't turn off accessibility or device admin",
+            "title": "Do not turn off accessibility or device admin",
             "description": "Disabling core permissions creates easy bypass pathways when feeling tempted."
         },
         {
             "type": "dont",
-            "title": "Don't leave alternative browsers unblocked",
+            "title": "Do not leave alternative browsers unblocked",
             "description": "Unrestricted web browsers can become easy loopholes around domain filtering."
         },
         {
             "type": "dont",
-            "title": "Don't keep security PIN easily accessible",
+            "title": "Do not keep security PIN easily accessible",
             "description": "Writing down or storing your security PIN nearby weakens impulse prevention."
         },
         {
             "type": "dont",
-            "title": "Don't delay adding new triggers",
+            "title": "Do not delay adding new triggers",
             "description": "When discovering a new distracting site, add it to your custom blocklist immediately."
         },
         {
             "type": "dont",
-            "title": "Don't use proxy or secondary VPN tools",
+            "title": "Do not use proxy or secondary VPN tools",
             "description": "Attempting to bypass ClearNet with external proxies undermines your protection goals."
         },
         {

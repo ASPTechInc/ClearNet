@@ -12,7 +12,7 @@ import java.util.*
 
 /**
  * Keeps the blocked website and app counts in a JSON file. The VPN and the
- * accessibility service update them from native threads, so they can't use the
+ * accessibility service update them from native threads, so they cannot use the
  * Flutter preferences. The Flutter app reads them through the 'getStats' method
  * channel call, which also resets the daily, weekly and monthly counts when
  * those periods have passed.
@@ -25,7 +25,7 @@ object NativeStatsManager {
     /**
      * Identifies the week containing [date] by the date of the Sunday it
      * starts on (such as "2025-10-12"). Weeks always start on Sunday, whatever
-     * the phone's locale, and the key needs no week numbering, so there's
+     * the phone's locale and the key needs no week numbering, so there's
      * nothing odd around New Year.
      */
     internal fun weekKey(date: Date): String {

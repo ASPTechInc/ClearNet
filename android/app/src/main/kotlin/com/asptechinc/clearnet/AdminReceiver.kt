@@ -10,7 +10,7 @@ import android.widget.Toast
 
 /**
  * Asks for the PIN before device administrator access can be turned off, so
- * ClearNet can't be uninstalled without it.
+ * ClearNet cannot be uninstalled without it.
  */
 class AdminReceiver : DeviceAdminReceiver() {
 
