@@ -37,6 +37,8 @@ void main() {
                 return true;
               case 'getBatteryStats':
                 return {'level': 100, 'isCharging': true};
+              case 'getBundledBlocklistSize':
+                return 953393;
               default:
                 throw PlatformException(code: 'Unimplemented');
             }
@@ -84,6 +86,26 @@ void main() {
     test('getBatteryStats returns correct map', () async {
       final stats = await VpnController.getBatteryStats();
       expect(stats, {'level': 100, 'isCharging': true});
+    });
+
+    test('getBundledBlocklistSize returns the number of domains', () async {
+      expect(await VpnController.getBundledBlocklistSize(), 953393);
+    });
+
+    test('getBundledBlocklistSize is null when the list is missing', () async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        VpnController.platform,
+        (_) async => 0,
+      );
+      expect(await VpnController.getBundledBlocklistSize(), isNull);
+
+      messenger.setMockMethodCallHandler(
+        VpnController.platform,
+        (_) async => throw PlatformException(code: 'error'),
+      );
+      expect(await VpnController.getBundledBlocklistSize(), isNull);
     });
   });
 }

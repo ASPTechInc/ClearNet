@@ -194,6 +194,43 @@ void main() {
       expect(find.byKey(const Key('domain_input')), findsOneWidget);
     });
 
+    testWidgets('explains the built-in blocklist without a count', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Your domains are added to the built-in blocklist of adult domains '
+          '(The Block List Project), which always applies. To allow a site '
+          'from it, add it to the Whitelist tab.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows how many domains the built-in blocklist has', (
+      WidgetTester tester,
+    ) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(VpnController.platform, (methodCall) async {
+            if (methodCall.method == 'getInstalledApps') {
+              return <Map<String, String>>[];
+            }
+            if (methodCall.method == 'getBundledBlocklistSize') return 953393;
+            return null;
+          });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('built-in blocklist of 953,393 adult domains'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('adds a new domain and displays it in list', (
       WidgetTester tester,
     ) async {

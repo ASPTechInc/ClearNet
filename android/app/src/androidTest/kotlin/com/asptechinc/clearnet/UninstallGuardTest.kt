@@ -81,7 +81,7 @@ class UninstallGuardTest {
 
     @Test
     fun adminReceiverShowsTheRecognisedMessage() {
-        val message = AdminReceiver().onDisableRequested(context android.content.Intent())
+        val message = AdminReceiver().onDisableRequested(context, android.content.Intent())
         assertEquals(context.getString(R.string.uninstall_dialog_message), message.toString())
     }
 }

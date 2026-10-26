@@ -21,6 +21,7 @@ import 'package:clearnet/data/services/app_nav_service.dart';
 import 'package:clearnet/data/services/app_tour_service.dart';
 import 'package:clearnet/data/services/blocklist_manager.dart';
 import 'package:clearnet/shared/utilities/constants.dart';
+import 'package:clearnet/shared/utilities/helpers.dart';
 
 class BlockedContentScreen extends StatefulWidget {
   const BlockedContentScreen({super.key});
@@ -49,6 +50,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
   Timer? _tourTimer;
   bool _areAppsLoading = true;
   bool _isBlockingEnabled = false;
+  int? _bundledDomainCount;
 
   List<String> userDomains = [];
   List<String> userKeywords = [];
@@ -67,6 +69,7 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
     // kept alive, so re-check it whenever the tab changes
     AppNavigationService.controller.addListener(_onTabChanged);
     unawaited(_loadData());
+    unawaited(_loadBundledDomainCount());
     _appController.addListener(_filterApps);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -225,6 +228,18 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading apps: $e')));
     }
+  }
+
+  /// "953,393 " once the count is known, so the sentence reads either way
+  String get _bundledDomainCountText {
+    final count = _bundledDomainCount;
+    return count == null ? '' : '${formatThousands(count)} ';
+  }
+
+  Future<void> _loadBundledDomainCount() async {
+    final count = await VpnController.getBundledBlocklistSize();
+    if (!mounted) return;
+    setState(() => _bundledDomainCount = count);
   }
 
   Future<void> _addDomain() async {
@@ -689,11 +704,14 @@ class _BlockedContentScreenState extends State<BlockedContentScreen>
             ],
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Domains added are merged with the built-in blocklist.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            'Your domains are added to the built-in blocklist of '
+            '$_bundledDomainCountText'
+            'adult domains (The Block List Project), which always applies. '
+            'To allow a site from it, add it to the Whitelist tab.',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),
         Expanded(

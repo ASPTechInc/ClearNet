@@ -133,6 +133,14 @@ KEYSTORE_PASSWORD
 
 ### Create app release via Tags
 
+Before tagging, refresh the bundled adult blocklist and commit it if it changed:
+
+```bash
+scripts/update_adult_blocklist.sh
+git add android/app/src/main/assets/blocklists/adult.txt
+git commit -m "Update bundled adult blocklist"
+```
+
 Push a tag matching the pattern `v*` to the `main` branch. The [release.yml](/.github/workflows/release.yml) workflow will
 automatically build the release APK and bundle, sign them securely and create a new GitHub
 Release.

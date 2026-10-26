@@ -52,6 +52,19 @@ class VpnController {
     await platform.invokeMethod('removeWhitelist', {'whitelist': whitelist});
   }
 
+  /// Number of domains in the bundled adult blocklist, or null if it could
+  /// not be loaded
+  static Future<int?> getBundledBlocklistSize() async {
+    try {
+      final size = await platform.invokeMethod<int>('getBundledBlocklistSize');
+      return size != null && size > 0 ? size : null;
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Check if Accessibility Service is enabled
   static Future<bool> isAccessibilityServiceEnabled() async {
     return await platform.invokeMethod('isAccessibilityServiceEnabled') ??

@@ -1,19 +1,30 @@
 {
   "domains": [
     "pornhub.com",
-    "xvideos.com",
-    "xnxx.com",
     "redtube.com",
+    "xnxx.com",
+    "xvideos.com",
     "youporn.com"
   ],
   "keywords": [
     "porn",
     "sex",
-    "xxx",
-    "zoo"
+    "xxx"
   ],
   "whitelist": [
+    "bbc.co.uk",
     "bbc.com",
-    "bbc.co.uk"
+    "eastsussex.gov.uk",
+    "essex.ac.uk",
+    "essex.gov.uk",
+    "essex.police.uk",
+    "gov.uk",
+    "nhs.uk",
+    "sussex.ac.uk",
+    "sussex.police.uk",
+    "westsussex.gov.uk",
+    "wikipedia.org",
+    "zoom.com",
+    "zoom.us"
   ]
 }

@@ -8,3 +8,9 @@ path = "**"
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 ASPTechnologies Incorporation"
 SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "android/app/src/main/assets/blocklists/adult.txt"
+precedence = "override"
+SPDX-FileCopyrightText = "The Block List Project contributors <https://github.com/blocklistproject/Lists>"
+SPDX-License-Identifier = "Unlicense"

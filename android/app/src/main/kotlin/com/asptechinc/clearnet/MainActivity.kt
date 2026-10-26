@@ -21,6 +21,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import androidx.core.net.toUri
+import kotlin.concurrent.thread
 
 /**
  * Hosts the Flutter UI and handles method-channel calls from Dart, such as
@@ -100,6 +101,13 @@ class MainActivity : FlutterActivity() {
                         SafeVpnService.instance?.removeWhitelistedSite(whitelist)
                     }
                     result.success(true)
+                }
+                "getBundledBlocklistSize" -> {
+                    // Loading the list can take a second or two
+                    thread {
+                        val size = BundledBlocklist.await(this).size
+                        runOnUiThread { result.success(size) }
+                    }
                 }
                 "checkInitialAction" -> {
                     // Flutter asks on startup whether the app was opened by a block

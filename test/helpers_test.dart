@@ -8,6 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:clearnet/shared/utilities/helpers.dart';
 
 void main() {
+  group('formatThousands', () {
+    test('puts commas between thousands', () {
+      expect(formatThousands(0), '0');
+      expect(formatThousands(999), '999');
+      expect(formatThousands(1000), '1,000');
+      expect(formatThousands(953393), '953,393');
+      expect(formatThousands(1234567), '1,234,567');
+      expect(formatThousands(-1234), '-1,234');
+    });
+  });
+
   group('isNewerVersion', () {
     test('a higher release is newer', () {
       expect(isNewerVersion('v1.1.0', '1.0.0+1'), isTrue);

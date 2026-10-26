@@ -7,6 +7,16 @@ class AppSession {
   static bool isSettingsUnlocked = false;
 }
 
+/// [number] with commas between thousands, such as "953,393".
+String formatThousands(int number) {
+  final digits = number.abs().toString();
+  final grouped = digits.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+$)'),
+    (_) => ',',
+  );
+  return number < 0 ? '-$grouped' : grouped;
+}
+
 /// Whether [latest] (such as "v1.2.0") is a newer version than [current]
 /// (such as "1.1.0+3"). Build numbers and pre-release tags are ignored.
 bool isNewerVersion(String latest, String current) {

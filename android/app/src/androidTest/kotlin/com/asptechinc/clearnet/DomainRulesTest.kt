@@ -69,4 +69,35 @@ class DomainRulesTest {
         assertFalse(blocksText("safe-casino.com - responsible gambling help"))
         assertFalse(blocksText("google.com search results"))
     }
+
+    @Test
+    fun inSites_checksTheHostAndItsParentDomains() {
+        assertTrue(DomainRules.inSites("x.com", sites))
+        assertTrue(DomainRules.inSites("a.b.WWW.X.COM.", sites))
+        assertFalse(DomainRules.inSites("box.com", sites))
+        assertFalse(DomainRules.inSites("x.com.au", sites))
+        assertFalse(DomainRules.inSites("com", sites))
+        assertFalse(DomainRules.inSites("", sites))
+        assertFalse(DomainRules.inSites("x.com", emptySet()))
+    }
+
+    @Test
+    fun normalise_matchesHowSitesAreLookedUp() {
+        assertTrue(DomainRules.inSites("www.x.com", setOf(DomainRules.normalise(" X.com. "))))
+    }
+
+    @Test
+    fun address_onAWhitelistedSiteIsRecognised() {
+        assertTrue(DomainRules.isWhitelistedAddress("google.com", whitelist))
+        assertTrue(DomainRules.isWhitelistedAddress("https://www.google.com/search?q=casino", whitelist))
+        assertTrue(DomainRules.isWhitelistedAddress(" safe-casino.com/help ", whitelist))
+    }
+
+    @Test
+    fun address_onlyCountsWhenTheTextIsJustAnAddress() {
+        assertFalse(DomainRules.isWhitelistedAddress("notgoogle.com", whitelist))
+        assertFalse(DomainRules.isWhitelistedAddress("google.com.evil.net/page", whitelist))
+        assertFalse(DomainRules.isWhitelistedAddress("as seen on google.com", whitelist))
+        assertFalse(DomainRules.isWhitelistedAddress("", whitelist))
+    }
 }

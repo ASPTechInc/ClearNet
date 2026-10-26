@@ -437,7 +437,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: const Text('Clear content'),
         content: const Text(
           'This will remove all items from blocked websites, keywords, '
-          'whitelist and unselect all blocked apps.'
+          'whitelist and unselect all blocked apps. The built-in blocklist '
+          'of adult domains still applies.'
           '\n\nDo you want to proceed?',
         ),
         actions: [
@@ -470,7 +471,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: const Text('Reset content'),
         content: const Text(
           'This will reset blocked sites, keywords and whitelist to '
-          'default data.'
+          'default data. The built-in blocklist of adult domains still '
+          'applies.'
           '\n\nDo you want to proceed?',
         ),
         actions: [
@@ -1313,7 +1315,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               // Donate
               ListTile(
-                leading: const Icon(Icons.coffee_outlined, color: Colors.brown),
+                leading: const Icon(Icons.coffee_outlined),
                 title: const Text('Donate'),
                 subtitle: const Text(
                   'Support lead app developer by buying a coffee',

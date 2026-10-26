@@ -636,7 +636,8 @@ void main() {
         expect(
           find.text(
             'This will remove all items from blocked websites, keywords, '
-            'whitelist and unselect all blocked apps.'
+            'whitelist and unselect all blocked apps. The built-in blocklist '
+            'of adult domains still applies.'
             '\n\nDo you want to proceed?',
           ),
           findsOneWidget,
@@ -697,7 +698,8 @@ void main() {
         expect(
           find.text(
             'This will reset blocked sites, keywords and whitelist to '
-            'default data.'
+            'default data. The built-in blocklist of adult domains still '
+            'applies.'
             '\n\nDo you want to proceed?',
           ),
           findsOneWidget,

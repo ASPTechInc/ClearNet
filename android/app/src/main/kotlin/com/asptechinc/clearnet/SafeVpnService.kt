@@ -118,12 +118,12 @@ class SafeVpnService : VpnService(), Runnable {
     }
 
     fun addBlockedSite(site: String) {
-        blockedSites.add(site.lowercase())
+        blockedSites.add(DomainRules.normalise(site))
         Log.i(TAG, "Added blocked site: $site")
     }
 
     fun removeBlockedSite(site: String) {
-        blockedSites.remove(site.lowercase())
+        blockedSites.remove(DomainRules.normalise(site))
         Log.i(TAG, "Removed blocked site: $site")
     }
 
@@ -138,12 +138,12 @@ class SafeVpnService : VpnService(), Runnable {
     }
 
     fun addWhitelistedSite(whitelist: String) {
-        whitelistedSites.add(whitelist.lowercase())
+        whitelistedSites.add(DomainRules.normalise(whitelist))
         Log.i(TAG, "Added whitelisted site: $whitelist")
     }
 
     fun removeWhitelistedSite(whitelist: String) {
-        whitelistedSites.remove(whitelist.lowercase())
+        whitelistedSites.remove(DomainRules.normalise(whitelist))
         Log.i(TAG, "Removed whitelisted site: $whitelist")
     }
 
@@ -163,10 +163,11 @@ class SafeVpnService : VpnService(), Runnable {
         blockedKeywords.clear()
         whitelistedSites.clear()
 
-        blockedSites.addAll(data.blockedSites.map { it.lowercase() })
+        blockedSites.addAll(data.blockedSites.map(DomainRules::normalise))
         blockedKeywords.addAll(data.blockedKeywords.map { it.lowercase() })
-        whitelistedSites.addAll(data.whitelistedSites.map { it.lowercase() })
+        whitelistedSites.addAll(data.whitelistedSites.map(DomainRules::normalise))
 
+        BundledBlocklist.load(this)
         upstreamServers = resolveUpstreams(data.customDns)
 
         if (vpnInterface == null) {
@@ -411,7 +412,9 @@ class SafeVpnService : VpnService(), Runnable {
      * Whitelisted domains are never blocked.
      */
     internal fun shouldBlockDomain(domain: String): Boolean =
-        DomainRules.shouldBlockDomain(domain, blockedSites, blockedKeywords, whitelistedSites)
+        DomainRules.shouldBlockDomain(
+            domain, blockedSites, blockedKeywords, whitelistedSites, BundledBlocklist.domains,
+        )
 
     fun getUptimeMinutes(): Long {
         if (startTime == 0L) return 0

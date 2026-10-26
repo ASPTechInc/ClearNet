@@ -18,7 +18,7 @@ import androidx.core.net.toUri
 class AppBlockService : AccessibilityService() {
 
     // Used until the first window change loads the saved lists
-    private var blockedKeywords = mutableSetOf("porn", "sex", "xxx", "adult")
+    private var blockedKeywords = mutableSetOf("porn", "sex", "xxx")
     private var blockedSites = mutableSetOf<String>()
     private var whitelistedSites = mutableSetOf<String>()
 
@@ -138,9 +138,10 @@ class AppBlockService : AccessibilityService() {
             Log.d(TAG, "Foreground app changed to: $packageName")
             
             // Pick up any list changes made in the app
-            this.blockedSites = data.blockedSites.toMutableSet()
+            this.blockedSites = data.blockedSites.mapTo(mutableSetOf(), DomainRules::normalise)
             this.blockedKeywords = data.blockedKeywords.toMutableSet()
-            this.whitelistedSites = data.whitelistedSites.toMutableSet()
+            this.whitelistedSites = data.whitelistedSites.mapTo(mutableSetOf(), DomainRules::normalise)
+            BundledBlocklist.load(this)
             
             val blockedApps = data.blockedApps
             
@@ -158,7 +159,7 @@ class AppBlockService : AccessibilityService() {
             
             if (isBrowser(packageName)) {
                 val rootNode = rootInActiveWindow ?: return
-                if (scanForBlockedContent(rootNode)) {
+                if (!showsWhitelistedAddress(rootNode) && scanForBlockedContent(rootNode)) {
                     blockAccess("Restricted content detected in $packageName")
                     incrementWebsiteBlockCount()
                 }
@@ -224,6 +225,22 @@ class AppBlockService : AccessibilityService() {
     }
 
     /**
+     * Returns true if this node or any of its children is the address of a
+     * whitelisted site, such as the address bar on a whitelisted page.
+     */
+    private fun showsWhitelistedAddress(node: AccessibilityNodeInfo?): Boolean {
+        if (node == null) return false
+
+        val text = node.text?.toString() ?: ""
+        if (DomainRules.isWhitelistedAddress(text, whitelistedSites)) return true
+
+        for (i in 0 until node.childCount) {
+            if (showsWhitelistedAddress(node.getChild(i))) return true
+        }
+        return false
+    }
+
+    /**
      * Returns true if this node or any of its children contains blocked text.
      */
     private fun scanForBlockedContent(node: AccessibilityNodeInfo?): Boolean {
@@ -253,7 +270,9 @@ class AppBlockService : AccessibilityService() {
     }
 
     private fun shouldBlockText(text: String): Boolean =
-        DomainRules.shouldBlockText(text, blockedSites, blockedKeywords, whitelistedSites)
+        DomainRules.shouldBlockText(
+            text, blockedSites, blockedKeywords, whitelistedSites, BundledBlocklist.domains,
+        )
 
     /**
      * Sends the user to the home screen, then shows the blocked screen.
