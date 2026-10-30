@@ -1,8 +1,8 @@
 [versions]
 annotationJvm = "1.11.0-rc01"
 gradle = "8.9.3"
-kotlinGradlePlugin = "2.0.21"
-kotlinxSerializationJson = "1.7.3"
+kotlinGradlePlugin = "2.4.21"
+kotlinxSerializationJson = "1.12.0"
 mockitoCore = "5.14.2"
 mockk = "1.13.13"
 compileSdk = "36"
